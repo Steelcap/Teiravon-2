@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<places>
+	<parent name="Felucca">
+		<parent name="Towns">
+			<parent name="Edana">
+				<child name="South Gate" x="2300" y="1080" z="0" />
+				<child name="Central Bank" x="2305" y="1011" z="0" />
+				<child name="Church" x="2248" y="1046" z="7" />
+			</parent>
+			<parent name="Amaresh">
+				<child name="Church" x="3464" y="1785" z="60" />
+				<child name="Bank" x="3455" y="1837" z="60" />.
+				<child name="Meeting Hall" x="3433" y="1860" z="97" />
+			</parent>
+			<parent name="Blood Gorge">
+				<child name="Storage" x="1647" y="2863" z="-20" />
+				<child name="Traders" x="1618" y="2867" z="-20" />
+				<child name="Bank" x="1593" y="2884" z="-20" />
+				<child name="Smith" x="1591" y="2923" z="-20" />
+				<child name="Entrance" x="1549" y="2890" z="-20" />
+			</parent>
+			<parent name="Three Peaks">
+				<child name="Entrance" x="1128" y="1434" z="75" />
+				<child name="Bank" x="5213" y="2962" z="0" />
+				<child name="Church" x="5213" y="2899" z="0" />
+				<child name="Traders" x="5171" y="2919" z="0" />
+				<child name="Smith" x="5170" y="2943" z="0" />
+				<child name="Stables" x="5195" y="2972" z="0" />
+				<child name="Tavern" x="5170" y="2999" z="0" />
+			</parent>
+			<parent name="Ril'auven">
+				<child name="S Gates" x="5223" y="193" z="5" />
+				<child name="Bank" x="5241" y="147" z="15" />
+				<child name="Inn" x="5300" y="234" z="10" />
+				<child name="Sorcere" x="5276" y="135" z="20" />
+				<child name="Traders" x="5228" y="50" z="15" />
+				<child name="Slave Pens" x="5267" y="45" z="15" />
+			</parent>
+			<parent name="Gnome Village">
+				<child name="Entrance" x="1618" y="1438" z="0" />
+			</parent>
+			<parent name="Orc City">
+				<child name="Entrance" x="2834" y="2309" z="0" />
+			</parent>
+		</parent>
+	</parent>
+</places>
