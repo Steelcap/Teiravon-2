@@ -1,0 +1,3334 @@
+using System;
+using Server;
+using Server.Accounting;
+using Server.Mobiles;
+using Server.Items;
+using Server.Gumps;
+using Server.Misc;
+using Server.Network;
+using Teiravon.Magecraft;
+
+namespace Server.Gumps
+{
+	public class FeatsGump : Gump
+	{
+		TeiravonMobile m_Player;
+
+		public FeatsGump( Mobile from ) : base( 50, 20 )
+		{
+			m_Player = (TeiravonMobile) from;
+			int temp = 0;
+
+			m_Player.CloseGump( typeof(FeatsGump) );
+
+			AddPage( 0 );
+			AddBackground( 50, 60, 600, 500, 3600 );
+
+			AddImage( 0, 0, 10440 );
+			AddImage( 615, 0, 10441 );
+
+			AddLabel( 255, 80, 150, "Teiravon\'s Feat System" );
+			AddLabel( 225, 115, 150, "You have " + m_Player.RemainingFeats + " Feat slot(s) available." );
+
+			AddLabel( 185, 151, 150, "Race Feats" );
+			AddButton( 164, 152, 1209, 1210, 1, GumpButtonType.Page, (int)m_Player.PlayerRace + 1 );
+
+			AddLabel( 448, 151, 150, "Class Feats" );
+
+			// Fighters
+            if (m_Player.IsFighter() || m_Player.IsKensai() || m_Player.IsCavalier())
+                temp = 100;
+
+            // Paladins
+            else if (m_Player.IsPaladin() || m_Player.IsUndeadHunter())
+                temp = 101;
+
+            // Barbarians
+            else if (m_Player.IsBerserker() || m_Player.IsDragoon())
+                temp = 102;
+
+            // Clerics
+            else if (m_Player.IsCleric() || m_Player.IsDarkCleric())
+                temp = 103;
+
+            // Rangers
+            else if (m_Player.IsRanger() || m_Player.IsArcher())
+                temp = 104;
+
+            // Rouges
+            else if (m_Player.IsThief() || m_Player.IsAssassin() || m_Player.IsMageSlayer() || m_Player.IsBard())
+                temp = 105;
+
+            // Mages
+            else if (m_Player.IsAeromancer() || m_Player.IsAquamancer() || m_Player.IsGeomancer() || m_Player.IsPyromancer() || m_Player.IsNecromancer())
+                temp = 106;
+
+            // Druids
+            else if (m_Player.IsForester() || m_Player.IsShapeshifter())
+                temp = 107;
+            // Monk
+            else if (m_Player.IsMonk())
+                temp = 109;
+
+            else
+                temp = 108;
+
+			AddButton( 427, 152, 1209, 1210, 2, GumpButtonType.Page, temp );
+
+			int imgx = 220;
+
+			AddImage( 345, imgx, 10004 );
+			AddImage( 345, imgx += 25, 10004 );
+			AddImage( 345, imgx += 25, 10004 );
+			AddImage( 345, imgx += 25, 10004 );
+			AddImage( 345, imgx += 25, 10004 );
+			AddImage( 345, imgx += 25, 10004 );
+			AddImage( 345, imgx += 25, 10004 );
+			AddImage( 345, imgx += 25, 10004 );
+			AddImage( 345, imgx += 25, 10004 );
+			AddImage( 345, imgx += 25, 10004 );
+			AddImage( 345, imgx += 25, 10004 );
+
+			// Human feats
+			AddPage( 2 );
+
+			AddTitle( "Human Race Feats" );
+
+			ListFeat( TeiravonMobile.Feats.WeaponSpecialization, "Weapon Specialization", 3, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.WealthyLineage, "Wealthy Lineage", 5, 132, 304 );
+			ListFeat( TeiravonMobile.Feats.Apprenticeship, "Apprenticeship", 7, 132, 372 );
+			ListFeat( TeiravonMobile.Feats.WarfareTraining, "Warfare Training", 9, 387, 236 );
+			ListFeat( TeiravonMobile.Feats.Leadership, "Leadership", 11, 387, 304 );
+
+			// Elven feats
+			AddPage( 3 );
+
+			AddTitle( "Elven Race Feats" );
+
+			ListFeat( TeiravonMobile.Feats.MagicResistance, "Magic Resistance", 13, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.Blademaster, "Blademaster", 15, 132, 304 );
+			ListFeat( TeiravonMobile.Feats.Marksmanship, "Marksmanship", 17, 132, 372 );
+			ListFeat( TeiravonMobile.Feats.Leadership, "Leadership", 11, 387, 236 );
+
+			// Drow feats
+			AddPage( 4 );
+
+			AddTitle( "Drow Race Feats" );
+
+			ListFeat( TeiravonMobile.Feats.MagicResistance, "Magic Resistance", 13, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.Blademaster, "Blademaster", 15, 132, 304 );
+			ListFeat( TeiravonMobile.Feats.CloakOfDarkness, "Cloak of Darkness", 19, 132, 372 );
+//			ListFeat( TeiravonMobile.Feats.GlobeOfDarkness, "Globe of Darkness", 21, 387, 236 );
+			ListFeat( TeiravonMobile.Feats.Leadership, "Leadership", 11, 387, 304 );
+
+			// Dwarven feats
+			AddPage( 5 );
+
+			AddTitle( "Dwarven Race Feats" );
+
+			ListFeat( TeiravonMobile.Feats.CripplingBlow, "Crippling Blow", 23, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.ResistPoison, "Resist Poison", 25, 132, 304 );
+			ListFeat( TeiravonMobile.Feats.ExpertMining, "Expert Mining", 27, 132, 372 );
+			ListFeat( TeiravonMobile.Feats.Leadership, "Leadership", 11, 387, 236 );
+
+			// Duergar feats
+			AddPage( 6 );
+
+			AddTitle( "Duergar Race Feats" );
+
+			ListFeat( TeiravonMobile.Feats.ResistPoison, "Resist Poison", 25, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.ResistPsionics, "Resist Psionics", 29, 132, 304 );
+			ListFeat( TeiravonMobile.Feats.ExpertMining, "Expert Mining", 27, 132, 372 );
+			ListFeat( TeiravonMobile.Feats.Leadership, "Leadership", 11, 387, 236 );
+
+			// Orc feats
+			AddPage( 7 );
+
+			AddTitle( "Orc Race Feats" );
+
+			ListFeat( TeiravonMobile.Feats.Bluudlust, "Bluudlust", 31, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.CripplingBlow, "Cripplin\' Bluw", 23, 132, 304 );
+			ListFeat( TeiravonMobile.Feats.BuumBuum, "Buum Buum", 33, 132, 372 );
+			ListFeat( TeiravonMobile.Feats.Leadership, "Leadurship", 11, 387, 236 );
+			ListFeat( TeiravonMobile.Feats.Tuffness, "Tuffness", 35, 387, 304 );
+
+
+			// Fighter Class Feats
+			AddPage( 100 );
+
+			AddTitle( "Fighter Class Feats" );
+			AddClassFeatHeading();
+
+			// Standard Feats
+			ListFeat( TeiravonMobile.Feats.TacticalAssessment, "Tactical Assessment", 37, 132, 236 );
+			//ListFeat( TeiravonMobile.Feats.WeaponMastery, "Weapon Mastery", 39, 132, 304 );
+
+			// Kit Feats
+			// One
+			if ( m_Player.IsFighter() )
+				ListFeat( TeiravonMobile.Feats.ShieldBash, "Shield Bash", 41, 387, 236 );
+
+			else if ( m_Player.IsKensai() )
+				ListFeat( TeiravonMobile.Feats.KaiShot, "Kai Shot", 43, 387, 236 );
+
+			else if ( m_Player.IsCavalier() )
+				ListFeat( TeiravonMobile.Feats.ResistPoison, "Resist Poison", 25, 387, 236 );
+
+			// Two
+			if ( m_Player.IsFighter() )
+				ListFeat( TeiravonMobile.Feats.CriticalStrike, "Critical Strike", 45, 387, 304 );
+
+			else if ( m_Player.IsKensai() )
+				ListFeat( TeiravonMobile.Feats.AdvancedHealing, "Advanced Healing", 47, 387, 304 );
+
+			else if ( m_Player.IsCavalier() )
+				ListFeat( TeiravonMobile.Feats.ArmorProficiency, "Armor Proficiency", 49, 387, 304 );
+
+			// Three
+			if ( m_Player.IsFighter() )
+				ListFeat( TeiravonMobile.Feats.ArmorProficiency, "Armor Proficiency", 49, 387, 372 );
+
+			else if ( m_Player.IsKensai() )
+				ListFeat( TeiravonMobile.Feats.Avoidance, "Avoidance", 51, 387, 372 );
+
+			else if ( m_Player.IsCavalier() )
+				ListFeat( TeiravonMobile.Feats.WarMount, "War Mount", 53, 387, 372 );
+
+			// Four
+			if ( m_Player.IsFighter() )
+				ListFeat( TeiravonMobile.Feats.WeaponMaster, "Weapon Master", 55, 387, 440 );
+
+			if ( m_Player.IsKensai() )
+				ListFeat( TeiravonMobile.Feats.ExoticWeapons, "Exotic Weaponry", 57, 387, 440 );
+
+			else if ( m_Player.IsCavalier() )
+				ListFeat( TeiravonMobile.Feats.MountedCombat, "Mounted Combat", 59, 387, 440 );
+
+			// Paladin Class Feats
+			AddPage( 101 );
+
+			AddTitle( "Paladin Class Feats" );
+			AddClassFeatHeading();
+
+			// Standard Feats
+			ListFeat( TeiravonMobile.Feats.TacticalAssessment, "Tactical Assessment", 37, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.HolyAura, "Holy Aura", 61, 132, 304 );
+			ListFeat( TeiravonMobile.Feats.DetectEvil, "Detect Evil", 63, 132, 372 );
+			ListFeat( TeiravonMobile.Feats.ArmorProficiency, "Armor Proficiency", 49, 132, 440 );
+
+
+			// Kit Feats
+			// One
+			if ( m_Player.IsPaladin() )
+				ListFeat( TeiravonMobile.Feats.LayOnHands, "Lay On Hands", 65, 387, 236 );
+
+			else if ( m_Player.IsUndeadHunter() )
+				ListFeat( TeiravonMobile.Feats.TurnUndead, "Turn Undead", 67, 387, 236 );
+
+
+			// Two
+			if ( m_Player.IsPaladin() )
+				ListFeat( TeiravonMobile.Feats.TurnUndead, "Turn Undead", 67, 387, 304 );
+
+			else if ( m_Player.IsUndeadHunter() )
+				ListFeat( TeiravonMobile.Feats.ResistCurses, "Resist Curses", 69, 387, 304 );
+
+
+			// Three
+			if ( m_Player.IsPaladin() )
+				ListFeat( TeiravonMobile.Feats.WarMount, "War Mount", 53, 387, 372 );
+
+			//TODO: Replacement?
+			//else if ( m_Player.IsUndeadHunter() )
+			//	ListFeat( TeiravonMobile.Feats.DivineAura, "Divine Aura", 71, 387, 372 );
+
+
+
+			// Barbarian Class Feats
+			AddPage( 102 );
+
+			AddTitle( "Barbarian Class Feats" );
+			AddClassFeatHeading();
+
+			// Standard Feats
+			ListFeat( TeiravonMobile.Feats.ElementalResistance, "Elemental Resistance", 73, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.AdvancedHealing, "Advanced Healing", 47, 132, 304 );
+			ListFeat( TeiravonMobile.Feats.DragonRoar, "Dragon Roar", 75, 132, 372 );
+			ListFeat( TeiravonMobile.Feats.AxeFighter, "Axe Fighter", 191, 132, 440 );
+
+
+			// Kit Feats
+			// One
+			if ( m_Player.IsBerserker() )
+				ListFeat( TeiravonMobile.Feats.BerserkerRage, "Berserker Rage", 77, 387, 236 );
+
+			else if ( m_Player.IsDragoon() )
+				ListFeat( TeiravonMobile.Feats.PowerLunge, "Power Lunge", 79, 387, 236 );
+
+
+			// Two
+			//if ( m_Player.IsBerserker() )
+				//ListFeat( TeiravonMobile.Feats.WeaponMastery, "Weapon Mastery", 39, 387, 304 );
+
+			//if ( m_Player.IsDragoon() )
+				//ListFeat( TeiravonMobile.Feats.ChargedStrike, "Charged Strike", 81, 387, 304 );
+
+
+			// Three
+			if ( m_Player.IsBerserker() )
+				ListFeat( TeiravonMobile.Feats.BarbarianInstinct, "Barbarian Focus", 83, 387, 372 );
+
+			else if ( m_Player.IsDragoon() )
+				ListFeat( TeiravonMobile.Feats.ArmorProficiency, "Armor Proficiency", 49, 387, 372 );
+
+
+
+			// Cleric Class Feats
+			AddPage( 103 );
+
+			AddTitle( "Cleric Class Feats" );
+			AddClassFeatHeading();
+
+			// Standard Feats
+			ListFeat( TeiravonMobile.Feats.AlchemyScience, "Alchemy Science", 85, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.AdvancedHealing, "Advanced Healing", 47, 132, 304 );
+
+			// Kit Feats
+			// One
+			if ( m_Player.IsCleric() )
+				ListFeat( TeiravonMobile.Feats.TurnUndead, "Turn Undead", 67, 387, 236 );
+
+			else if ( m_Player.IsDarkCleric() )
+				ListFeat( TeiravonMobile.Feats.RebukeUndead, "Rebuke Undead", 87, 387, 236 );
+
+
+			// Two
+			if ( m_Player.IsCleric() )
+				ListFeat( TeiravonMobile.Feats.HolyAura, "Holy Aura", 61, 387, 304 );
+
+			else if ( m_Player.IsDarkCleric() )
+				ListFeat( TeiravonMobile.Feats.DarkAura, "Dark Aura", 89, 387, 304 );
+
+
+			// Three
+			if ( m_Player.IsCleric() )
+				ListFeat( TeiravonMobile.Feats.BestowBlessing, "Bestow Blessing", 91, 387, 372 );
+
+			else if ( m_Player.IsDarkCleric() )
+				ListFeat( TeiravonMobile.Feats.BestowDarkBlessing, "Bestow Dark Blessing", 93, 387, 372 );
+
+
+			// Four
+			if ( m_Player.IsCleric() )
+				ListFeat( TeiravonMobile.Feats.DivineMight, "Divine Might", 95, 387, 440 );
+
+			else if ( m_Player.IsDarkCleric() )
+				ListFeat( TeiravonMobile.Feats.UnholyMight, "Unholy Might", 97, 387, 440 );
+
+
+			// Ranger Class Feats
+			AddPage( 104 );
+
+			AddTitle( "Ranger Class Feats" );
+			AddClassFeatHeading();
+
+			// Standard Feats
+			ListFeat( TeiravonMobile.Feats.RacialEnemy, "Racial Enemy", 99, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.Orientation, "Orientation", 101, 132, 289 );
+			ListFeat( TeiravonMobile.Feats.AnimalCompanion, "Animal Companion", 103, 132, 342 );
+			//ListFeat( TeiravonMobile.Feats.FlushCreatures, "Flush Creatures", 105, 132, 395 );
+
+			if ( m_Player.IsRanger() )
+				ListFeat( TeiravonMobile.Feats.Foraging, "Foraging", 107, 132, 448 );
+
+			// Kit Feats
+			// One
+			if ( m_Player.IsRanger() )
+				ListFeat( TeiravonMobile.Feats.AdvancedTracking, "Advanced Tracking", 109, 387, 236 );
+
+			else if ( m_Player.IsArcher() )
+				ListFeat( TeiravonMobile.Feats.CalledShot, "Called Shot", 111, 387, 236 );
+
+
+			// Two
+			if ( m_Player.IsRanger() )
+				ListFeat( TeiravonMobile.Feats.ExtraRacialEnemy, "Extra Racial Enemy", 113, 387, 289 );
+
+			//else if ( m_Player.IsArcher() )
+			//	ListFeat( TeiravonMobile.Feats.ChargedMissile, "Charged Missile", 115, 387, 289 );
+
+
+			// Three
+			if ( m_Player.IsRanger() )
+				ListFeat( TeiravonMobile.Feats.BeastLore, "Beast Lore", 117, 387, 342 );
+
+			else if ( m_Player.IsArcher() )
+				ListFeat( TeiravonMobile.Feats.Marksmanship, "Marksmanship", 17, 387, 342 );
+
+
+			// Four
+			if ( m_Player.IsRanger() )
+				ListFeat( TeiravonMobile.Feats.WildernessLore, "Wilderness Lore", 119, 387, 395 );
+
+			else if ( m_Player.IsArcher() )
+				ListFeat( TeiravonMobile.Feats.ExoticWeapons, "Exotic Weaponry", 57, 387, 395 );
+
+
+			// Five
+			if ( m_Player.IsRanger() )
+				ListFeat( TeiravonMobile.Feats.Forensics, "Forensics", 121, 387, 448 );
+
+			else if ( m_Player.IsArcher() )
+				ListFeat( TeiravonMobile.Feats.BowSpecialization, "Bow Specialization", 123, 387, 448 );
+
+
+			// Rogue Class Feats
+			AddPage( 105 );
+
+			AddTitle( "Rogue Class Feats" );
+			AddClassFeatHeading();
+
+			// Standard Feats
+
+			ListFeat( TeiravonMobile.Feats.Backstab, "Backstab", 125, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.Avoidance, "Avoidance", 51, 132, 289 );
+			ListFeat( TeiravonMobile.Feats.Disguise, "Disguise", 127, 132, 342 );
+			ListFeat( TeiravonMobile.Feats.UseMagicDevice, "Use Magic Device", 129, 132, 395 );
+
+			// Kit Feats
+			// One
+			if ( m_Player.IsThief() )
+				ListFeat( TeiravonMobile.Feats.TrapLore, "Trap Lore", 131, 387, 236 );
+
+			//else if ( m_Player.IsAssassin() )
+				//ListFeat( TeiravonMobile.Feats.Apothecary, "Apothecary", 133, 387, 236 );
+
+			else if ( m_Player.IsBard() )
+				ListFeat( TeiravonMobile.Feats.DispelMagic, "Enchanting Melody", 211, 387, 236 );
+
+
+			// Two
+			if ( m_Player.IsThief() )
+				ListFeat( TeiravonMobile.Feats.NimbleFingers, "Nimble Fingers", 137, 387, 289 );
+
+			else if ( m_Player.IsAssassin() )
+				ListFeat( TeiravonMobile.Feats.ExoticPoisons, "Exotic Poisons", 139, 387, 289 );
+
+			else if ( m_Player.IsBard() )
+				ListFeat( TeiravonMobile.Feats.CuttingWords, "Cutting Words", 213, 387, 289 );
+
+
+			// Three
+			if ( m_Player.IsThief() )
+				ListFeat( TeiravonMobile.Feats.Disarm, "Disarm", 143, 387, 342 );
+
+			else if ( m_Player.IsAssassin() )
+				ListFeat( TeiravonMobile.Feats.AdvancedStealth, "Advanced Stealth", 145, 387, 342 );
+
+			else if ( m_Player.IsMageSlayer() )
+				ListFeat( TeiravonMobile.Feats.ChargedStrike, "Charged Strike", 81, 387, 342 );
+
+
+			// Four
+			if ( m_Player.IsThief() )
+				ListFeat( TeiravonMobile.Feats.Locksmithing, "Locksmithing", 147, 387, 395 );
+
+//			else if ( m_Player.IsAssassin() )
+//				ListFeat( TeiravonMobile.Feats.ContractKilling, "Contract Killing", 149, 387, 395 );
+
+
+			// Mage Class Feats
+			AddPage( 106 );
+
+			AddTitle( "Mage Class Feats" );
+			AddClassFeatHeading();
+
+			// Standard Feats
+
+			ListFeat( TeiravonMobile.Feats.AlchemyScience, "Alchemy Science", 85, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.ArcaneEnchantment, "Arcane Enchantment", 153, 132, 289 );
+			ListFeat( TeiravonMobile.Feats.Inscription, "Inscription", 155, 132, 342 );
+            ListFeat(TeiravonMobile.Feats.MeditativeConcentration, "Meditative Concetration", 197, 132, 395);
+
+			//if ( !m_Player.IsNecromancer() )
+			//	ListFeat( TeiravonMobile.Feats.ImprovedFamiliar, "Improved Familiar", 151, 132, 395 );
+
+
+			// DISABLED - ListFeat( TeiravonMobile.Feats.Bookworm, "Bookworm", 157, 132, 448 );
+
+			// Kit Feats
+			// One
+			if ( m_Player.IsNecromancer() )
+				ListFeat( TeiravonMobile.Feats.RebukeUndead, "Rebuke Undead", 87, 387, 236 );
+
+			else if ( !m_Player.IsNecromancer() )
+				ListFeat( TeiravonMobile.Feats.ElementalResistance, "Elemental Resistance", 73, 387, 236 );
+
+
+			// Two
+			if ( m_Player.IsNecromancer() )
+				ListFeat( TeiravonMobile.Feats.SummonUndead, "Summon Undead", 159, 387, 289 );
+
+			if ( !m_Player.IsNecromancer() )
+				ListFeat( TeiravonMobile.Feats.ImprovedFamiliar, "Improved Familiar", 151, 387, 289 );
+
+
+			// Three
+			if ( m_Player.IsNecromancer() )
+				ListFeat( TeiravonMobile.Feats.NecroSpellbook, "Advanced Necromancy", 163, 387, 342 );
+
+			if ( !m_Player.IsNecromancer() )
+				ListFeat( TeiravonMobile.Feats.Apprenticeship, "Apprenticeship", 7, 387, 342 );
+
+
+			// Four
+			if ( m_Player.IsNecromancer() )
+				ListFeat( TeiravonMobile.Feats.UndeadBond, "Undead Bond", 133, 387, 395 );
+
+			else if ( !m_Player.IsNecromancer() )
+				ListFeat( TeiravonMobile.Feats.RigorousTraining, "Rigorous Training", 165, 387, 395 );
+
+
+			// Druid Class Feats
+			AddPage( 107 );
+
+			AddTitle( "Druid Class Feats" );
+			AddClassFeatHeading();
+
+			// Standard Feats
+
+			ListFeat( TeiravonMobile.Feats.ResistPoison, "Resist Poison", 25, 132, 236 );
+			ListFeat( TeiravonMobile.Feats.WildShape, "Wild Shape", 169, 132, 289 );
+			ListFeat( TeiravonMobile.Feats.AnimalCompanion, "Animal Companion", 103, 132, 342 );
+			ListFeat( TeiravonMobile.Feats.Inscription, "Inscription", 155, 132, 395 );
+
+			// Kit Feats
+			// One
+			if ( m_Player.IsForester() )
+				ListFeat( TeiravonMobile.Feats.ElementalResistance, "Elemental Resistance", 73, 387, 236 );
+
+			else if ( m_Player.IsShapeshifter() )
+				ListFeat( TeiravonMobile.Feats.AdvancedHealing, "Advanced Healing", 47, 387, 236 );
+
+
+			// Two
+			if ( m_Player.IsForester() )
+				ListFeat( TeiravonMobile.Feats.NaturesEnchantment, "Nature\'s Enchantment", 171, 387, 289 );
+
+			else if ( m_Player.IsShapeshifter() )
+				ListFeat( TeiravonMobile.Feats.Telepathy, "Telepathy", 173, 387, 289 );
+
+
+			// Three
+			if ( m_Player.IsForester() )
+				ListFeat( TeiravonMobile.Feats.ResistEnergy, "Resist Energy", 175, 387, 342 );
+
+			else if ( m_Player.IsShapeshifter() )
+				ListFeat( TeiravonMobile.Feats.Bite, "Bite", 177, 387, 342 );
+
+
+			// Four
+			if ( m_Player.IsForester() )
+				ListFeat( TeiravonMobile.Feats.BeastLore, "Beast Lore", 117, 387, 395 );
+
+			else if ( m_Player.IsShapeshifter() )
+				ListFeat( TeiravonMobile.Feats.PhysicalResistance, "Physical Resistance", 179, 387, 395 );
+
+
+			// Five
+			if ( m_Player.IsForester() )
+				ListFeat( TeiravonMobile.Feats.WildernessLore, "Wilderness Lore", 119, 387, 448 );
+
+
+			// Crafter Class Feats
+			AddPage( 108 );
+
+			AddTitle( "Crafter Class Feats" );
+			AddClassFeatHeading();
+
+			// Standard Feats
+			ListFeat( TeiravonMobile.Feats.RacialCrafting, "Racial Crafting", 193, 132, 236 );
+
+
+			// Kit Feats
+			// One
+			if ( m_Player.IsTailor() )
+				ListFeat( TeiravonMobile.Feats.AdvancedDying, "Advanced Dying", 181, 387, 236 );
+
+			else if ( m_Player.IsWoodworker() )
+				ListFeat( TeiravonMobile.Feats.FurnitureStaining, "Furniture Staining", 185, 387, 236 );
+
+			else if ( m_Player.IsBlacksmith() )
+				ListFeat ( TeiravonMobile.Feats.ArmorEnameling, "Armor Enameling", 187, 387, 236);
+
+			else if (m_Player.IsAlchemist() )
+				ListFeat ( TeiravonMobile.Feats.Research, "Alchemical Research", 189, 387, 236);
+
+			// Two
+			if ( m_Player.IsTailor() )
+				ListFeat( TeiravonMobile.Feats.LeatherDying, "Leather Dying", 183, 387, 289 );
+			
+			else if ( m_Player.IsBlacksmith() )
+				ListFeat( TeiravonMobile.Feats.SkilledGatherer, "Skilled Gatherer", 195, 387, 289 );
+
+			else if ( m_Player.IsWoodworker() )
+				ListFeat( TeiravonMobile.Feats.SkilledGatherer, "Skilled Gatherer", 195, 387, 289 );
+
+			else if ( m_Player.IsTinker() )
+				ListFeat( TeiravonMobile.Feats.SkilledGatherer, "Skilled Gatherer", 195, 387, 289 );
+
+			else if ( m_Player.IsBowyer() )
+				ListFeat( TeiravonMobile.Feats.SkilledGatherer, "Skilled Gatherer", 195, 387, 289 );
+			// Three
+
+
+			// Four
+
+
+			// Five
+
+            // Monk Class Feats
+            AddPage(109);
+
+            AddTitle("Monk Class Feats");
+            AddClassFeatHeading();
+
+            // Standard Feats
+
+            ListFeat(TeiravonMobile.Feats.Flurry, "Flurry of Blows", 199, 132, 236);
+            ListFeat(TeiravonMobile.Feats.MindBodySoul, "Mind Body and Soul", 201, 132, 316);
+            ListFeat(TeiravonMobile.Feats.WholenessOfSelf, "Wholeness of Self", 203, 132, 395);
+            ListFeat(TeiravonMobile.Feats.KiStrike, "Ki Strikes", 205, 387, 395);
+            ListFeat(TeiravonMobile.Feats.BodyOfIron, "Body of Iron", 207, 387, 236);
+            ListFeat(TeiravonMobile.Feats.LeapOfClouds, "Leap of Clouds", 209, 387, 316);
+		}
+
+
+		private void AddClassFeatHeading()
+		{
+			AddLabel( 165, 195, 150, "Standard Feats" );
+			AddLabel( 438, 195, 150, "Kit Feats" );
+		}
+
+		private void AddTitle( string title )
+		{
+			AddHtml( 45, 195, 600, 20, "<basefont size=\"8\" color=\"#ffffff\"><center>" + title + "</center></basefont>", false, false );
+		}
+
+		private void ListFeat( string title, int x, int y )
+		{
+			ListFeat( TeiravonMobile.Feats.None, title, -1, x, y );
+		}
+
+		private void ListFeat( TeiravonMobile.Feats feat, string title, int index, int titlex, int titley )
+		{
+			if ( index != -1 )
+			{
+				AddLabel( titlex, titley, 150, title );
+				AddButton( titlex - 17, titley + 4, 2360, 2360, ( m_Player.HasFeat( feat ) ) ? 0 : index, GumpButtonType.Reply, 0 );
+				AddImage( titlex - 17, titley + 4, ( m_Player.HasFeat( feat ) ) ? 2360 : 2361 );
+				AddLabel( titlex + 19, titley + 24, 150, "Description" );
+				AddButton( titlex, titley + 26, 9702, 9703, index + 1, GumpButtonType.Reply, 0 );
+			} else {
+				AddLabel( titlex, titley, 150, title );
+			}
+		}
+
+		public override void OnResponse( Server.Network.NetState sender, RelayInfo info )
+		{
+			TeiravonMobile m_Player = (TeiravonMobile) sender.Mobile;
+
+			string title, progress, usage, description, type, prerequisites;
+
+			title = progress = usage = description = type = prerequisites = "?";
+			bool sendgump = false;
+
+            switch (info.ButtonID)
+            {
+                case 3:
+                    if (m_Player.PlayerLevel < 4)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                        m_Player.SendGump(new Teiravon.Feats.WeaponSpecGump(m_Player));
+
+                    break;
+
+                case 4:
+                    title = "Weapon Specialization";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Level 4";
+                    usage = "Automatic";
+                    description = "You spent considerable time learning how to effectively weild weapons from a military tutor. Because of this training you are able to wield a specified weapon style better than a normal person. You may choose from Bladed, Blunted, or Piercing weaponry to specialize in. NOTE: You cannot exceed skill cap.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 5:
+                    if (m_Player.PlayerLevel > 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.WealthyLineage(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.WealthyLineage);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 6:
+                    title = "Wealthy Lineage";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Must be used at Level 1";
+                    usage = "Automatic";
+                    description = "You come from a wealthy family lineage. Perhaps from a wealthy merchant family or even from a noble bloodline. Because of this family past, you have acquired a princely inheritence that is granted to you once you have reached the required age. You begin your life with a large dowry of gold in your bank.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 7:
+                    if (m_Player.PlayerLevel > 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.SendGump(new Teiravon.Feats.ApprenticeshipGump(m_Player));
+                    }
+
+                    break;
+
+                case 8:
+                    title = "Apprenticeship";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Must be used at Level 1";
+                    usage = "Automatic";
+                    description = "As a youth, you took on a job working for a local merchant. Under his/her tutelage, you have learned some skill in a chosen trade. As a result, you have started your adult life with some knowledge in trade to assist you in making a living. (NOTE: You will only recieve 30 points in a chosen trade skill from the available list)";
+
+                    sendgump = true;
+
+                    break;
+
+                case 9:
+                    if (m_Player.PlayerLevel > 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.WarfareTraining(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.WarfareTraining);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 10:
+                    title = "Warfare Training";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Must be used at Level 1";
+                    usage = "Automatic";
+                    description = "Since Humans are constantly at war with one another and with other races, some have learned warfare tactics at a young age. As a result, they start out with better equipment than the standard items. With this Feat, the character is granted a full Copper Ringmail suit and a weapon one grade higher than the starting weapon of your class. Mages, Rogues, & Druids should not choose this Feat.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 11:
+                    if (m_Player.PlayerLevel < 10 || m_Player.Fame < 6500)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.Leadership(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.Leadership);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 12:
+                    title = "Leadership";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Level 10+ and 6500+ fame";
+                    usage = "Automatic";
+                    description = "As a result of the character\'s adventures and deeds, the character has gained a good reputation and can now acquire new follower types in addition to the basic types. This Feat works alongside the Mercenary/Follower System. ";
+
+                    sendgump = true;
+
+                    break;
+
+                case 13:
+                    if (m_Player.PlayerLevel > 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.MagicResistance(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.MagicResistance);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 14:
+                    title = "Magic Resistance";
+                    type = "Passive";
+                    progress = "One-time";
+                    prerequisites = "Must be used at Level 1";
+                    usage = "Automatic";
+                    description = "Through some strange twist of fate at your birth, you have a strange ability to resist magic. As a result, you start out your adult life with a bonus to your magic resistance. (NOTE: You will gain a skill bonus of 30% to your skill Magic Resistance upon creation)";
+
+                    sendgump = true;
+
+                    break;
+
+                case 15:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.Blademaster(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.Blademaster);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 16:
+                    title = "Blademaster";
+                    type = "Passive";
+                    progress = "One-time";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "Those of Elven blood (including Drow) have made an Art out of combat. In this case, the weapon style is that of blades (sword types only). As a result of your training, you have learned to weild your sword with greater precision and dexterity.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 17:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.Marksmanship(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.Marksmanship);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 18:
+                    title = "Marksmanship";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "With your strange ability of keen eyesight, you can weild a bow with greater accuracy. As a result, you gain a skill bonus to all types of normal bows. (NOTE: This does not apply to any type of crossbow)";
+
+                    sendgump = true;
+
+                    break;
+
+                case 19:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.CloakOfDarkness);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 20:
+                    title = "Cloak of Darkness";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "None";
+                    usage = "[CloakOfDarkness";
+                    description = "You have gained the innate Drow ability to resist Charm and Curse spells as well as some forms of other Harm-type spells (not including elemental). This is a magical ability that must be activated.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 21:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.GlobeOfDarkness);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 22:
+                    title = "Globe of Darkness";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Cloak of Darkness";
+                    usage = "[GlobeOfDarkness";
+                    description = "You have gained the innate Drow ability to create complete darkness in the immediate area for a small amount of time. Non-drow with Infravision within the radius will lose the ability for the remainder of the spell. This is a magical ability that must be activated.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 23:
+                    if (m_Player.Skills.Anatomy.Base < 30)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.CripplingBlow);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 24:
+                    title = "Crippling Blow";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Anatomy 30%+";
+                    usage = "[Cripple";
+                    description = "You have learned the ability to cripple your opponent without killing him. When using this Feat there is a chance to stun and lower enemy stamina making them weak and vulnerable. Useful when trying to capture the target without killing them. This Feat can only be used when using blunt weapons.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 25:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ResistPoison);
+                        m_Player.RemainingFeats -= 1;
+
+                        m_Player.CheckResistanceBonus();
+                    }
+
+                    break;
+
+                case 26:
+                    title = "Resist Poison";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "Through some strange twist of fate at your birth, you have a strange ability to resist any form of natural poison. As a result, you gain a bonus to your poison resistance. (NOTE: This is a special resistance ability and is not magical)";
+
+                    sendgump = true;
+
+                    break;
+
+                case 27:
+                    if (m_Player.PlayerLevel > 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.ExpertMining(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.ExpertMining);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 28:
+                    title = "Expert Mining";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Must be used at Level 1";
+                    usage = "Automatic";
+                    description = "Because of your natural affinity with the earth and your passion for mining and smithing, you have learned to tap the earth to gain knowledge of ore veins making mining easier and allowing you to seek out particular ores. You are granted an additional bonus to your Mining Skills.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 29:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ResistPsionics);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 30:
+                    title = "Resist Psionics";
+                    type = "Passive";
+                    progress = "Usage";
+                    prerequisites = "Resist Poison Feat";
+                    usage = "Automatic";
+                    description = "Through some strange twist of fate at your birth, you have a strange ability to resist psionic spells and spell-based attacks. As a result, you start out your adult life with a bonus to your resistance. (NOTE: This is a special resistance ability)";
+
+                    sendgump = true;
+
+                    break;
+
+                case 31:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.Bluudlust);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 32:
+                    title = "Bluudlust";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "[Bluudlust";
+                    description = "Orcs have the ability to become enraged with bloodlust.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 33:
+                    if (!m_Player.IsCrafter())
+                        m_Player.SendMessage("You are not a crafter.");
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.BuumBuum);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 34:
+                    title = "Buum Buum";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Crafter class";
+                    usage = "[Buumbuum";
+                    description = "You have learned the secret in creating primitive explosion potions. This feat grants you access to a special alchemy system for orcs.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 35:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.Tuffness);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 36:
+                    title = "Tuffness";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "Your hide is tougher and hardier than most Orcs. As a result, you gain a natural resistance against attacks.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 37:
+                    if (m_Player.RawInt < 50)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.TacticalAssessment);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 38:
+                    title = "Tactical Assessment";
+                    type = "Passive";
+                    progress = "Usage";
+                    prerequisites = "Intelligence 50+";
+                    usage = "Automatic";
+                    description = "The character gains the ability to assess their opponent during combat. Periodically the combat statistics of a target will be displayed to the character. The skill level of this Feat determines the type of information gained.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 39:
+                    if (m_Player.PlayerLevel < 4)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.SendGump(new Teiravon.Feats.WeaponMasteryGump(m_Player));
+                    }
+
+                    break;
+
+                case 40:
+                    title = "Weapon Mastery";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Level 4";
+                    usage = "Automatic";
+                    description = "You spent considerable time learning how to effectively weild weapons from a military tutor. Because of this training you are able to wield a specified weapon style better than a normal person. You may choose from Bladed, Blunted, or Piercing weaponry to specialize in. This Feat can stack with Weapon Specialization.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 41:
+                    if (!m_Player.HasFeat(TeiravonMobile.Feats.ArmorProficiency))
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ShieldBash);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 42:
+                    title = "Shield Bash";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Armor Proficiency Feat";
+                    usage = "Double-Click an equipped shield";
+                    description = "You can use your shield as a weapon in combat by hitting your opponent from the front. Shield Bash will inflict damage plus having a chance to stun your opponent. The effectiveness of the bash increases as the skill advances allowing for more damage.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 43:
+                    if (m_Player.Skills.Anatomy.Base < 40)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.KaiShot);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 44:
+                    title = "Kai Shot";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Anatomy Skill 40+";
+                    usage = "[KaiShot";
+                    description = "You have learned to harness your Ki into a focused attack. Because of this concentrated energy focus, once this powerful attack is performed, you must wait and let your Ki energize before you can use it again. The power and damage of the Kai Shot depends on the skill level of the character. Kai Shot will drain mana and stamina when it is used.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 45:
+                    if (m_Player.Skills.Anatomy.Base < 50)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.CriticalStrike);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 46:
+                    title = "Critical Strike";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Anatomy Skill 50+";
+                    usage = "[CriticalStrike";
+                    description = "This ability can be activated when using any weapon. The character has a chance of finding a vulnerable place on the target (usually the vital points of the body) inflicting more damage than normal. The amount of the damage modifier will increase as the skill progresses.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 47:
+                    if (!m_Player.IsShapeshifter() && m_Player.Skills.Healing.Base < 60)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.IsShapeshifter() && (!m_Player.HasFeat(TeiravonMobile.Feats.WildShape) || !m_Player.HasFeat(TeiravonMobile.Feats.Bite)))
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.AdvancedHealing);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 48:
+                    title = "Advanced Healing";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Non-Druid - Healing 60+; Druid - Wild Shape and Bite Feats";
+                    usage = "Automatic";
+                    description = "You have learned the strange ability to go into a deep meditative trance, thus allowing your body to heal itself much faster than otherwise possible. But, entering and leaving this deep trance takes alot of concentration and taxes the body. Once leaving a trance, you loose mana in return for your health and you must give your body time to rest before entering it again.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 49:
+                    if (m_Player.PlayerLevel < 5)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ArmorProficiency);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 50:
+                    title = "Armor Proficiency";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "Level 5";
+                    usage = "Automatic";
+                    description = "This Feat allows the character to use the heavier armor types (plate armor) if the character\'s class can wear plate armor. The strength requirements still remain for that plate armor type. This also pertains to the magical equivalent of that armor type.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 51:
+                    if (m_Player.RawDex < 60)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.Avoidance);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 52:
+                    title = "Avoidance";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "Dexterity 60+";
+                    usage = "Automatic";
+                    description = "You have honed your reflexes to a state above normal. Thus you can dodge ranged attacks and even spells easier than you could before.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 53:
+                    if (m_Player.PlayerLevel < 10)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.WarMount);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 54:
+                    title = "War Mount";
+                    type = "Active";
+                    progress = "One-Time";
+                    prerequisites = "Dexterity 60+, Level 10+";
+                    usage = "[CallMount";
+                    description = "When you have learned enough experience, you will gain the ability to call forth a mystical steed as your companion. This steed will carry you faithfully into battle and across the lands. Be forewarned, if your warmount is to die in battle, the price you pay to earn a new mount will not be light.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 55:
+                    if (m_Player.PlayerLevel < 11)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.WeaponMaster);
+                        m_Player.SendGump(new Teiravon.Feats.WpnMasterGump(m_Player));
+                    }
+
+                    break;
+
+                case 56:
+                    title = "Weapon Master";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "Level 11+";
+                    usage = "Automatic";
+                    description = "You spent considerable time training in a specific Weapon of your choice. Because of this training you recieve weapon and tactics skill bonuses when wielding this weapon.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 57:
+                    m_Player.SendMessage("This feat has been disabled.");
+                    break;
+
+                /*
+                if ( m_Player.PlayerLevel < 5 )
+                    m_Player.SendMessage( Teiravon.Messages.NoReqs );
+                else if ( m_Player.RemainingFeats < 1 )
+                    m_Player.SendMessage( Teiravon.Messages.NoFeatSlots );
+                else
+                {
+                    m_Player.AddFeat( TeiravonMobile.Feats.ExoticWeapons );
+                    m_Player.RemainingFeats -= 1;
+                }
+
+                break;
+                */
+
+                case 58:
+                    title = "Exotic Weaponry";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "Level 5";
+                    usage = "Automatic";
+                    description = "You have learned to weild different types of exotic weapons. As you learn to weild them more effeciently, your options of weapon types will also increase. Keep in mind that you can only use weapons that your character class can use. It is not known how many types of these strange weapons exist as their knowledge has been lost since during the wars in the Age of Chaos.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 59:
+                    if (!m_Player.HasFeat(TeiravonMobile.Feats.WarMount))
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.MountedCombat);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 60:
+                    title = "Mounted Combat";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "Warmount Feat";
+                    usage = "Automatic";
+                    description = "You have learned the art of mounted combat through extensive and rigorous training. You are able to fight on horseback using weapons such as lances and other weapons designed for mounted combat. You have also learned how to use mounts, especially War Mounts, to their fullest extent, helping you attack and defend while mounted.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 61:
+                    if (m_Player.Karma < 5000)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.HolyAura);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 62:
+                    title = "Holy Aura";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Karma 5000+";
+                    usage = "[HolyAura";
+                    description = "Your training and deeds to your deity have granted you the ability to protect yourself from evil-aligned characters. As you continue to follow your Path and gain experience, so too will the potency of the aura increase when it is used.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 63:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.DetectEvil);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 64:
+                    title = "Detect Evil";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "None";
+                    usage = "[DetectEvil";
+                    description = "Your divine powers have grown to the extent that you are able to determine the alignment of another character if you are skilled enough. As you become more experienced, you will be able to determine the extremity of the person\'s alignment if they are evil. At higher levels, you will be able to detect any of the Unliving as well.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 65:
+                    if (m_Player.Skills.Healing.Base < 50)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.LayOnHands);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 66:
+                    title = "Lay on Hands";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Healing skill 50+";
+                    usage = "[LayOnHands";
+                    description = "You have been gifted with the touch of healing. By praying to your diety, you are able to call upon the healing powers of the Divine and heal the one that you touch (not including yourself). The potency of your touch is based on your level of experience. As you advance, so too will the power of your touch. This ability can only be used once per day.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 67:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.TurnUndead);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 68:
+                    title = "Turn Undead";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Double-click your holy symbol";
+                    description = "Through the character, the deity manifests a portion of its power, terrifying evil, undead creatures or blasting them right out of existence. No action can be taken while the character is attempting to turn undead. A lower skill levels, the character can turn undead so they lose moral and run away. At higher skill levels, the character will have a chance to destroy them outright.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 69:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ResistCurses);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 70:
+                    title = "Resist Curses";
+                    type = "Passive";
+                    progress = "Usage";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "Because of your dedication to your Diety's cause, your Deity has granted you a unique ability to resist curses that are commonly used by the Unliving. As a result, you gain a bonus to your curse resistance. (NOTE: This is a special resistance ability and is not magical)";
+
+                    sendgump = true;
+
+                    break;
+
+                case 71:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.DivineAura);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 72:
+                    title = "Divine Aura";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "None";
+                    usage = "[DivineAura";
+                    description = "Your training and deeds to your deity have granted you the ability to protect yourself from undead characters. As you continue to follow your Path and gain experience, so too will the potency of the aura increase when it is used.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 73:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ElementalResistance);
+                        m_Player.RemainingFeats -= 1;
+
+                        m_Player.CheckResistanceBonus();
+                    }
+
+                    break;
+
+                case 74:
+                    title = "Elemental Resistance";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "Due to the constant exposure to the elements, your body has developed a unique ability to resist the elements, be it magical or natural. As your skill in this ability increases, so too will the resistance percent increase. Each element has its own area of reistance: Earth, Air, Fire, and Water (Water includes Acid and Poison).";
+
+                    sendgump = true;
+
+                    break;
+
+                case 75:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.DragonRoar);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 76:
+                    title = "Dragon Roar";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "[DragonRoar";
+                    description = "You have learned an ancient barbarian technique that mimics the power of a Dragon\'s roar, therefore striking fear into the heart of your enemy causing them to flee in terror. (NPCs will flee in terror, PCs will lose stamina and drop their weapon if they fail the save roll)";
+
+                    sendgump = true;
+
+                    break;
+
+                case 77:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.BerserkerRage);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 78:
+                    title = "Berserker Rage";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "You have learned the ability to become increasingly enraged while in combat, increasing their damage as they get drunk off the high of combat.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 79:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.PowerLunge);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 80:
+                    title = "Power Lunge";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "[Lunge";
+                    description = "This Feat is a specialty of Barbarian Dragoons and allows him to sweep his weapon damaging all opponents within his range.  This ability is usable with polearms, axes, and viking swords with polearms having a longer reach.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 81:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ChargedStrike);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 82:
+                    title = "Charged Strike";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "None";
+                    usage = "[ChargedStrike";
+                    description = "By tapping the character's Mana reserve, they are able to place a temporary, one-time damage enchantment on their weapon. If successful, it will penetrate the opponent\'s defenses for extra damage. This ability can only be parried with a defender\'s parrying skill equivalent or better to that of the attacker\'s weapon skill and the opponent must be wearing a shield in order to block the attack.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 83:
+                    /*if ( !m_Player.HasFeat( TeiravonMobile.Feats.WeaponMastery ) )
+                        m_Player.SendMessage( Teiravon.Messages.NoReqs );
+                    else*/
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.BarbarianInstinct);
+                        m_Player.Skills.DetectHidden.Base = 100.0;
+                        m_Player.Skills.Focus.Cap = 100.0;
+                        if (m_Player.Skills.Focus.Base <= 30.0)
+                            m_Player.Skills.Focus.Base = 30.0;
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 84:
+                    title = "Barbarian Focus";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "None";
+                    usage = "None";
+                    description = "This Feat gives the Berserker the ability to be supremenly aware of himself and his surroundings.  He can detect hidden enemies, avoid be surprise attacked and becomes supremely focused.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 85:
+                    if (m_Player.RawInt < 60)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.AlchemyScience(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.AlchemyScience);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 86:
+                    title = "Alchemy Science";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Intelligence 60+";
+                    usage = "Automatic";
+                    description = "This Feat will grant the character knowledge of the Art of Alchemy and its uses. Upon learning this Feat, the character will receive 30 skill points in Alchemy and gain the character\'s proper Alchemy equipment.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 87:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.RebukeUndead);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 88:
+                    title = "Rebuke Undead";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Double-click your holy symbol";
+                    description = "Through the character, the deity manifests a portion of its power, taking control of undead creatures. However, since the power must be channeled through a mortal vessel, success is not always assured. No action can be taken while the character is attempting to rebuke undead. A lower skill levels, the character can control certain forms of undead. As the skill progresses, the types of controlled undead available increases.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 89:
+                    if (m_Player.Karma > -5000)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.DarkAura);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 90:
+                    title = "Dark Aura";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Karma -5000";
+                    usage = "[DarkAura";
+                    description = "Your training and deeds to your deity have granted you the ability to protect yourself from good-aligned characters. As you continue to follow your Path and gain experience, so too will the potency of the aura increase when it is used.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 91:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.SendMessage(Teiravon.Colors.FeatMessageColor, "You have gained the Bestow Blessing Feat.");
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.BestowBlessing);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 92:
+                    title = "Bestow Blessing";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Double-click your holy symbol";
+                    description = "You have been gifted with the ability to place blessings upon specially prepared items. This Feat is a requirement in creating holy items, such as Holy Water which is a bane of the Undead. The type of items that can be blessed increases based on the skill level of the Feat.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 93:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.SendMessage(Teiravon.Colors.FeatMessageColor, "You have gained the Bestow Dark Blessing Feat.");
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.BestowDarkBlessing);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 94:
+                    title = "Bestow Dark Blessing";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Double-click your unholy symbol";
+                    description = "You have been gifted with the ability to place blessings upon specially prepared items. This Feat is a requirement in creating unholy items, such as Unholy Water which is a boon to the Undead. The type of items that can be blessed increases based on the skill level of the Feat.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 95:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.DivineMight);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 96:
+                    title = "Divine Might";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Double-click your holy symbol";
+                    description = "Using your Holy Symbol as a foci, you are able to call upon the Divine energies and grant yourself a damage boon in combat. For a limited time, you are able to deal extra damage to most undead creatures. Using this Feat will require you to expend a portion of your mana pool.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 97:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.UnholyMight);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 98:
+                    title = "Unholy Might";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Double-click your unholy symbol";
+                    description = "Using your Unholy Symbol as a foci, you are able to call upon the Divine energies and grant yourself a damage boon in combat. For a limited time, you are able to deal extra damage to most lawful creatures. Using this Feat will require you to expend a portion of your mana pool.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 99:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                        m_Player.SendGump(new RacialEnemyGump(m_Player, false));
+
+                    break;
+
+                case 100:
+                    title = "Racial Enemy";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "";
+                    description = "Rangers (including Archers) are natural hunters in the wilderness. They have the ability to focus their efforts against a particular type of creature. The Ranger will gain an attack bonus against the chosen creature type. The damage inflicted increases as the Ranger gains experience.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 101:
+                    if (m_Player.Skills.Tracking.Base < 75)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.Orientation(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.Orientation);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 102:
+                    title = "Orientation";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Tracking 75+";
+                    usage = "Automatic";
+                    description = "Rangers are explorers and guides of the Realm. Because of this, they have learned how to discern the lay of the land. This Feat grants the ability to learn Cartography and the use of maps. The Ranger receives 30 skill points in Cartography and a map kit. Additional materials can be purchased from scribes.";
+                    sendgump = true;
+
+                    break;
+
+                case 103:
+                    if (m_Player.Skills.Tracking.Base < 75)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.AnimalCompanion);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 104:
+                    title = "Animal Companion";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Tracking 75+";
+                    usage = "[Companion";
+                    description = "This Feat gives the Rangers/Druids the ability to gain an animal companion. Once this Feat is gained, the character must enter the Forest and send out the Call of Bonding. The animal type will be the animal that responds to the character\'s bonding call. As the Feat skill progresses, the higher types of that animal will answer the character\'s call. The death of a companion carries a heavy price.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 105:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.FlushCreatures);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 106:
+                    title = "Flush Creatures";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "None";
+                    usage = "[Flush";
+                    description = "As a Ranger, you have learned how to read your surroundings and know the creatures that reside in it. This grants you the ability to flush out creatures into the open. When creatures are flushed out, some may appear but others in the area go deeper into hiding. Thus, you must wait before using the Feat again. Your skill and techique with flushing improves as you use it.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 107:
+                    if (!m_Player.HasFeat(TeiravonMobile.Feats.WildernessLore) || m_Player.PlayerLevel < 10)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.Foraging);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 108:
+                    title = "Foraging";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Wilderness Lore Feat, Level 10+";
+                    usage = "[Forage";
+                    description = "Because you have spent your life in the wilderness, you have developed better skills and techniques with surviving in the wilderness. You know how to scavenge and forage the wilderness in search of edible flora and foliage. You rate of success and the types of food you find increases as you become more skilling in foraging.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 109:
+                    if (m_Player.Skills.Tracking.Base < 100)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.AdvancedTracking);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 110:
+                    title = "Advanced Tracking";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Tracking 100+";
+                    usage = "Automatic";
+                    description = "Using a little magic, this feat allows the Ranger to read the biological signs of his target. ( Click on the tracking arrow activate )";
+
+                    sendgump = true;
+
+                    break;
+
+                case 111:
+                    if (m_Player.Skills.Anatomy.Base < 60)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.CalledShot);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 112:
+                    title = "Called Shot";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Anatomy 60+";
+                    usage = "[CalledShot";
+                    description = "As a master marksman with the bow, you can pinpoit vital spots on your opponent\'s body. When this Feat is activated, the Archer\'s next few arrows will do additional damage.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 113:
+                    if (!m_Player.HasFeat(TeiravonMobile.Feats.RacialEnemy) || m_Player.PlayerLevel < 10)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                        m_Player.SendGump(new RacialEnemyGump(m_Player, true));
+
+                    break;
+
+                case 114:
+                    title = "Extra Racial Enemy";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "Racial Enemy Feat, Level 10+";
+                    usage = "";
+                    description = "This Feat follows the Ranger's Racial Enemy Feat. It will grant the Ranger an additional creature type to add to his/her current Racial Enemy.  The Ranger will gain an attack bonus against the chosen creature type. The damage inflicted increases as the Ranger gains experience.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 115:
+                    if (!m_Player.HasFeat(TeiravonMobile.Feats.Marksmanship) || m_Player.Skills.Anatomy.Base < 45)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ChargedMissile);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 116:
+                    title = "Charged Missile";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Marksmanship Feat, Anatomy 45+";
+                    usage = "[ChargedMissle";
+                    description = "You have learned how to tap into your mana pool to place an small enchantment on your arrows. This technique is a temporary, one-time minor enchantment on the weapon. The damage bonus will last only a small time before it expires. The strength of the enchantment will increase as the Archer becomes more skilled in its use.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 117:
+                    if (m_Player.PlayerLevel < 10)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.BeastLore(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.BeastLore);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 118:
+                    title = "Beast Lore";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Level 10+";
+                    usage = "Automatic";
+                    description = "Because you have spent your life in the wilderness, you have developed a natural affinity towards animals and have learned the ways of the creatures called \"monsters\". This Feat will grant you bonuses to the following skills: Animal Lore skill 45, Animal Taming skill 40, Herding skill 30, and Veterinary skill 45.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 119:
+                    if (m_Player.PlayerLevel < 5)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.WildernessLore(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.WildernessLore);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 120:
+                    title = "Wilderness Lore";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Level 5+";
+                    usage = "Automatic";
+                    description = "Because you have spent your life in the wilderness, you have developed better skills and techniques with surviving in the wilderness. You know how to create a better campsite and have gained some skill in finding food. This Feat grants you bonuses to the following skills: Camping skill 30, Cooking skill 30, and Fishing skill 30.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 121:
+                    if (m_Player.PlayerLevel < 5)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.Forensics(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.Forensics);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 122:
+                    title = "Forensics";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Level 5+";
+                    usage = "Automatic";
+                    description = "You have the ability to become a skilled tracker. Because of this ability, you have learned to track your prey using skilled means. As a result, you are able to use those skills in other ways. This Feat grants you bonuses to the following skills: Forensic Evaluation skill 30, and Tracking skill 30.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 123:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.BowSpecialization);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 124:
+                    title = "Bow Specialization";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "Being of the Archer class, you have focused your training on learning how to weild the bow more effectively than any other class. Thus, you gain the ability to use the more powerful bow types. This will allow the character to advance the skill further than normally possible as most of the stronger bow types are denied to every character class type.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 125:
+                    if (m_Player.RawDex < 50 || m_Player.Skills.Hiding.Base < 50)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.Backstab);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 126:
+                    title = "Backstab";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Dexterity 50+, Hiding 50+";
+                    usage = "[Backstab";
+                    description = "You are a creatures of the shadows. As such, one of the skills you have learned is the ability to approach your target unseen and unheard. By taking them from behind, you are able to strike one of the critical areas of the body and inflict greater damage than normal. As you become more experienced, the damage you can inflict will increase.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 127:
+                    if (!m_Player.IsHalfElf() && !m_Player.IsThief() && !m_Player.IsAssassin() && !m_Player.IsMageSlayer())
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        DisguiseKit m_Disguise = new DisguiseKit();
+
+                        m_Player.Backpack.AddItem(m_Disguise);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.Disguise);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 128:
+                    title = "Disguise";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Half-Elven or Rogue";
+                    usage = "Automatic";
+                    description = "The character has learned the ability to use disguises and can use the disguise kit to its fullest extent (depending on skill). The character is also granted a disguise kit to their inventory when choosing this feat.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 129:
+                    if (m_Player.PlayerLevel < 10)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.UseMagicDevice);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 130:
+                    title = "Use Magical Device";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "Level 10+";
+                    usage = "Automatic";
+                    description = "You have learned to use enchanted items that spellcasters use. The type of item you can use depends on the your skill in this Feat. Some items include: wands, staves, scrolls, as well as other arcane items. But there is a risk, however, just because you can use the item doesn\'t mean that you know what the item will do when activated. A rogue\'s life is never easy, especially when it comes to the arcane.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 131:
+                    if (m_Player.Skills.Lockpicking.Base < 50 || m_Player.Skills.RemoveTrap.Base < 50)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.TrapLore);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 132:
+                    title = "Trap Lore";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Lockpicking 50+, Remove Trap 50+";
+                    usage = "[SetTrap";
+                    description = "Because of your profession, you encounter many traps, most of which always seem to get in your way. Thus you have learned how to disarm traps. You have even learned how to set your own traps using certain resources. Your options will increase as you become more experienced.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 133:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.UndeadBond);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 134:
+                    title = "Undead Bond";
+                    type = "Active and Passive";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "[necrospeak, [drainundead";
+                    description = "Your years spent down in the crypts have made you forge a unique bond with the undead. This allows you to speak through them as well as replenish your energy through their dark lifeforce. As your strength grows, several forms of undead will consider you as one of their own.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 135:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.DispelMagic);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 136:
+                    title = "Dispel Magic";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "None";
+                    usage = "[Dispel";
+                    description = "Due to their intense training and constant exposure to magic, Mage Slayers have developed the innate ability to dispel magic. This includes offensive magic spells (poison, curses, etc) and enchantments (Agility, Strength, etc). The dispel strength is relative to the skill of the Feat.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 137:
+                    if (m_Player.RawDex < 50)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.NimbleFingers);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 138:
+                    title = "Nimble Fingers";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Dexterity 50+";
+                    usage = "Automatic";
+                    description = "Your profession grants you the ability to pickpocket unwary victims. This includes players and NPC\'s (if the NPC is carrying certain types of loot). Stealing can only be accessed through this Feat and cannot be gained by any other means. What can be stolen is based on the skill level of this Feat.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 139:
+                    if (m_Player.PlayerLevel < 5)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ExoticPoisons);
+                        m_Player.Skills.Poisoning.Base += 50;
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 140:
+                    title = "Exotic Poisons";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Level 5";
+                    usage = "Automatic";
+                    description = "This Feat allows Assassins the ability to create various poisons and their antidotes.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 141:
+                    if (!m_Player.HasFeat(TeiravonMobile.Feats.DispelMagic))
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.MindBlast);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 142:
+                    title = "Mind Blast";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Dispel Magic Feat";
+                    usage = "[MindBlast";
+                    description = "This is a specialized Feat of Mage Slayers, it gives the ability to drain all Mana from a spellcaster. At higher levels, it will add a bonus effect, called Mana Bind. It will create an arcane bind on the spellcaster so that when he/she attempts to cast, it will cause a magical backlash and cause serious pain.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 143:
+                    if (!m_Player.HasFeat(TeiravonMobile.Feats.NimbleFingers) || !m_Player.HasFeat(TeiravonMobile.Feats.Avoidance))
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.Disarm);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 144:
+                    title = "Disarm";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Nimble Fingers Feat, Avoidance Feat";
+                    usage = "[Disarm";
+                    description = "Thieves are some of the most agile people in the Realm, mainly due to their lifestyle. Some thieves have learned to use this enhanced quickness to get themselves out of a few tough situations. This Feat allows thieves to disarm their opponent causing them to drop their weapon. At higher levels, the thief can actually snatch the weapon out of the opponent\'s hands.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 145:
+                    if (m_Player.Skills.Stealth.Base < 100 || !m_Player.HasFeat(TeiravonMobile.Feats.Avoidance))
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.AdvancedStealth(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.AdvancedStealth);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 146:
+                    title = "Advanced Stealth";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Stealth 100+, Avoidance Feat";
+                    usage = "[Stealth";
+                    description = "Assassins are masters of the shadows. This Feat will allow the Assassin to conceal their presence where it would not be possible to do normally. Be it underbrush or in a busy street, Assassins have the ability that makes them seem to disappear completely from sight.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 147:
+                    if (m_Player.RawInt < 50 || m_Player.RawDex < 50)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.Locksmithing(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.Locksmithing);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 148:
+                    title = "Locksmithing";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Intelligence 50+, Dexterity 50+";
+                    usage = "Automatic";
+                    description = "You have spent considerable time learning the complex and intricate ways of locks. Taking them apart, picking them with various tools, you let no lock go untested. Due to this effort, you have started learning how to disable any lock you come across and eagerly await the next lock to challenge your skill. (You recieve 30 in skill and a set of lockpicking tools.)";
+
+                    sendgump = true;
+
+                    break;
+
+                case 149:
+                    if (!m_Player.HasFeat(TeiravonMobile.Feats.Avoidance) || !m_Player.HasFeat(TeiravonMobile.Feats.Backstab) || !m_Player.HasFeat(TeiravonMobile.Feats.Disguise))
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ContractKilling);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 150:
+                    title = "Contract Killing";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "Backstab Feat, Disguise Feat, Avoidance Feat";
+                    usage = "Automatic";
+                    description = "This is the meat for the Assassins profession. With this Feat, the Assassin is granted access to the Assassin Contract System. It will reveal the contacts for a city that the Assassin needs to visit to gain new contracts and to receive payment for completed contracts. As the skill progresses, the Assassin gains new contacts one city at a time.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 151:
+                    if (m_Player.PlayerLevel < 10)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ImprovedFamiliar);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 152:
+                    title = "Improved Familiar";
+                    type = "Active";
+                    progress = "One-Time";
+                    prerequisites = "Level 10+";
+                    usage = "[SummonFamiliar";
+                    description = "This feat allows a mage the capacity to take on a powerful magical familiar.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 153:
+                    if (m_Player.PlayerLevel < 10 || m_Player.RawInt < 100)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ArcaneEnchantment);
+                        m_Player.RemainingFeats -= 1;
+                        CreationOrb m_orb = new CreationOrb();
+                        m_orb.UsesRemaining = 20;
+                        m_Player.AddToBackpack(m_orb);
+                    }
+
+                    break;
+
+                case 154:
+                    title = "Arcane Enchantment";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Level 10+, Intelligence 100+";
+                    usage = "Automatic";
+                    description = "The powers of the Arcane can be harnessed if the Mage is skilled enough and well-versed in the proper Lore. This Feat will grant access to the Magecraft system. As the Mage becomes more skilled in creating enchantments, the types of items the Mage can enchant will increase.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 155:
+                    if (m_Player.RawInt < 50)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        Teiravon.Feats.Functions.Inscription(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.Inscription);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 156:
+                    title = "Inscription";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Intelligence 50+";
+                    usage = "Automatic";
+                    description = "During your years of research, you have learned to master the pen and quill, among other things. Because of this aptness, you can use your skills to work on other aspects. This Feat grants you access to the Inscription system. When this Feat is first learned, the Mage receives 30 skill points in the Inscription skill and a Scribe's Kit.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 157:
+                case 158:
+                    // Bookworm - DISABLED
+                    break;
+
+                case 159:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.SummonUndead);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 160:
+                    title = "Summon Undead";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "[SummonUndead";
+                    description = "You have learned how to create a strong link between the material plane and the netherworld. This allows you to summon undead minions to serve you.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 161:
+                    if (m_Player.RawInt < 100)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ArcaneTransfer);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 162:
+                    title = "Arcane Transfer";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Intelligence 100+";
+                    usage = "[ArcaneTransfer";
+                    description = "You have discovered the lost knowledge of arcane transference. This Feat allows you to recharge your Mana pool by drawing magical energy from charged items, such as wands. The amount of mana returned and the number of charges consumed in the item is based on the transfer skill level of the Mage. Unfortunately, the item will often loose all it's charges even though the mage does not intentionally completely drain it.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 163:
+                    if (m_Player.PlayerLevel < 10 || m_Player.Skills.SpiritSpeak.Base < 60)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.NecroSpellbook);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 164:
+                    title = "Advanced Necromancy";
+                    type = "Active";
+                    progress = "One-time";
+                    prerequisites = "Level 10, Spirit Speak 60+";
+                    usage = "Through the necromancer spellbook.";
+                    description = "Years of traning in the art of Necromancy has granted you the ability to use advanced spells and dark incantations for your sinister purposes.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 165:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else if (m_Player.PlayerLevel > 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else
+                    {
+                        Teiravon.Feats.Functions.RigorousTraining(m_Player);
+
+                        m_Player.AddFeat(TeiravonMobile.Feats.RigorousTraining);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 166:
+                    title = "Rigorous Training";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Must be used at Level 1";
+                    usage = "Automatic";
+                    description = "As a novice, you attacked your studies with extreme dedication and passion. You studied relentlessly and honed your abilities in your chosen element to the extent that you gained more exposure to your element than most other novices. As a result, you begin your adult life with a greater understanding of your chosen element.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 167:
+                    if (m_Player.RawInt < 75)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.CreateInfusion);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 168:
+                    title = "Create Infusion";
+                    type = "Passive";
+                    progress = "Usage";
+                    prerequisites = "Intelligence 75+";
+                    usage = "Automatic";
+                    description = "This Feat grants the ability to store a divine spell within a specially prepared herb. This is a very useful Feat for Shapeshifters, as when in shifted form, they do not have the ability to use their hands to consume potions. Once an infused plant is prepared, it can be hidden away in places that the Druid can gain access to in creature form. Infusion herbs will not decay. As the Feat progresses, the types of infusions that can be created expand as well as the strength of the infusion.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 169:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.WildShape);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 170:
+                    title = "Wild Shape";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "None";
+                    usage = "[Shapeshift";
+                    description = "Wild Shape will grant access to additional forms, but the Shapeshifter must still meet the requirements for that form. As the skill progresses, the number of forms available will also increase. The forester version of this feat has less forms available than the shapeshifter feat. ";
+
+                    sendgump = true;
+
+                    break;
+
+                case 171:
+                    if (m_Player.RawInt < 60)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.NaturesEnchantment);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 172:
+                    title = "Nature\'s Enchantment";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Intelligence 60+";
+                    usage = "[druidcraft";
+                    description = "The powers of Nature can be harnessed if the Druid is skilled enough and well-versed in the proper Lore. This Feat will grant access to the Druidcraft system. As the Druid becomes more skilled in creating enchantments, the types of items the Druid can enchant will increase.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 173:
+                    if (m_Player.RawInt < 40 || !m_Player.HasFeat(TeiravonMobile.Feats.WildShape))
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.Telepathy);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 174:
+                    title = "Telepathy";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Wild Shape Feat, Intelligence 40+";
+                    usage = "[Telepathy";
+                    description = "Shapeshifters have the capacity to take on creature abilities in every form, including the unique ability to communicate with each other. This Feat allows Shifters to contact other Shapeshifters when they are in creature form regardless of where they are located. Other Shapeshifters must also have this Feat in order to communicate; otherwise the receiver can only receive the mental messages and not send them.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 175:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ResistEnergy);
+                        m_Player.RemainingFeats -= 1;
+
+                        m_Player.CheckResistanceBonus();
+                    }
+
+                    break;
+
+                case 176:
+                    title = "Resist Energy";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "Due to the constant exposure to the elements, your body has developed a unique ability to resist certain types of magic, which includes any energy based spell. (NOTE: This is a special resistance ability)";
+
+                    sendgump = true;
+
+                    break;
+
+                case 177:
+                    if (m_Player.Skills.Wrestling.Base < 80 || !m_Player.HasFeat(TeiravonMobile.Feats.WildShape))
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.Bite);
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 178:
+                    title = "Bite";
+                    type = "Active";
+                    progress = "Usage";
+                    prerequisites = "Wild Shape Feat, Wrestling 80+";
+                    usage = "[Bite";
+                    description = "Most forms that Shapeshifters become are carnivorous creatures, thus when in creature form, Shapeshifters can bite a corpse to feed of the blood and meat. At low levels, it will provide sustenance. As the skill increases, the animal form will receive health regeneration from the bite and the amount of health returned will increase.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 179:
+                    if (m_Player.Skills.Wrestling.Base < 80 || !m_Player.HasFeat(TeiravonMobile.Feats.WildShape))
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.PhysicalResistance);
+                        m_Player.RemainingFeats -= 1;
+
+                        m_Player.CheckResistanceBonus();
+                    }
+
+                    break;
+
+                case 180:
+                    title = "Physical Resistance";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "Wild Shape Feat, Wrestling 80+";
+                    usage = "Automatic";
+                    description = "Although some creature forms have an innate ability to resist damage due to their tough hides, this Feat grants that toughness for all of a Shapeshifter\'s forms that are available. This only applies when the Shapeshifter is in creature form. The strength of the resistance will increase as the Shapeshifter gains experience.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 181:
+                    if (m_Player.PlayerLevel < 15)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.AdvancedDying);
+                        m_Player.RemainingFeats -= 1;
+
+                        Teiravon.Feats.Functions.AdvancedDying(m_Player);
+                    }
+                    break;
+
+                case 182:
+                    title = "Advanced Dying";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Level 15+";
+                    usage = "Automatic";
+                    description = "Although you can dye cloth in a myriad of available colors, this feat will introduce several special colors not normally available to you.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 183:
+                    if (m_Player.PlayerLevel < 15)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.LeatherDying);
+                        m_Player.RemainingFeats -= 1;
+
+                        Teiravon.Feats.Functions.LeatherDying(m_Player);
+                    }
+                    break;
+
+                case 184:
+                    title = "Leather Dying";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Level 15+";
+                    usage = "Automatic";
+                    description = "Although you can dye cloth in a myriad of colors, this feat will allow you to dye your leather goods as well.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 185:
+                    if (m_Player.PlayerLevel < 15)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.FurnitureStaining);
+                        m_Player.RemainingFeats -= 1;
+
+                        Teiravon.Feats.Functions.FurnitureStaining(m_Player);
+                    }
+                    break;
+
+                case 186:
+                    title = "Furniture Staining";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Level 15+";
+                    usage = "Automatic";
+                    description = "Although you can craft furniture in a selection of woods, this feat will allow you to stain your crafted goods in a myriad of colors.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 187:
+                    if (m_Player.PlayerLevel < 15)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.ArmorEnameling);
+                        m_Player.RemainingFeats -= 1;
+
+                        Teiravon.Feats.Functions.ArmorEnameling(m_Player);
+                    }
+                    break;
+
+                case 188:
+                    title = "Armor Enameling";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "Level 15+";
+                    usage = "Automatic";
+                    description = "Although you can craft your armor in various metals, this feat will allow you to enamel your armor and shields in various colors.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 189:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                        m_Player.SendGump(new Teiravon.Feats.ResearchGump(m_Player));
+
+                    break;
+
+                case 190:
+                    title = "Alchemical Research";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "Spending many hours researching for alchmemical formulas, one can come across many valuable and sometime archaic tomes.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 191:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.AxeFighter);
+                        m_Player.Skills.Lumberjacking.Cap = 100.0;
+                        m_Player.RemainingFeats -= 1;
+                    }
+
+                    break;
+
+                case 192:
+                    title = "Axe Fighter";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "Long time battle training and experience allow the axe fighter greater lumberjack capability and earlier and easier axe weapon abilities.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 193:
+                    bool skillcheck = false;
+
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        if (m_Player.IsBlacksmith() && m_Player.Skills.Blacksmith.Base >= 100.0)
+                        {
+                            skillcheck = true;
+                            if (!m_Player.IsDwarf())
+                                m_Player.SendMessage("Check the racial feat description again for hints to crafting racial alloys");
+                        }
+                        if (m_Player.IsTailor() && m_Player.Skills.Tailoring.Base >= 100.0)
+                            skillcheck = true;
+                        if (m_Player.IsTinker() && m_Player.Skills.Tinkering.Base >= 100.0)
+                            skillcheck = true;
+                        if (m_Player.IsCook() && m_Player.Skills.Cooking.Base >= 100.0)
+                            skillcheck = true;
+                        if (m_Player.IsWoodworker() && m_Player.Skills.Carpentry.Base >= 100.0)
+                            skillcheck = true;
+                        if (m_Player.IsAlchemist() && m_Player.Skills.Alchemy.Base >= 100.0)
+                            skillcheck = true;
+                        if (m_Player.IsBowyer() && m_Player.Skills.Fletching.Base >= 100.0)
+                            skillcheck = true;
+
+                        if (skillcheck)
+                        {
+                            m_Player.AddFeat(TeiravonMobile.Feats.RacialCrafting);
+                            m_Player.RemainingFeats -= 1;
+                        }
+                        else
+                        {
+                            m_Player.SendMessage("You must be a master of your craft to choose this feat.");
+                        }
+                    }
+
+                    break;
+
+                case 194:
+                    title = "Racial Crafting";
+                    type = "Passive";
+                    progress = "One-Time";
+                    prerequisites = "100 in main craft skill";
+                    usage = "Automatic";
+                    if (!m_Player.HasFeat(TeiravonMobile.Feats.RacialCrafting))
+                        description = "Long hours spent training at your craft allow you to create wondrous items specific to race.";
+                    else if (!m_Player.IsBlacksmith())
+                        description = "Long hours spent training at your craft allow you to create wondrous items specific to race.";
+                    else
+                    {
+                        if (m_Player.IsHuman())
+                        {
+                            description = "Alloys can be crafted using the ]alloy command<br>Steel - the alloy of Humans<br>Step 1: Most precious metal<br>Step 2: Lightest colored wood<br>Step 3: Repeat step 1<br>Step 4: Not dull metal<br>Step 5: Earth<br>Step 6: Metallic Wood?";
+                        }
+                        else if (m_Player.IsOrc())
+                        {
+                            description = "Alloys can be crafted using the ]alloy command<br>Bloodrock - the alloy of Orcs<br>Step 1: Cold & Energy weapon damage<br>Step 2: most precious wood<br>Step 3: Repeat step 1<br>Step 4: dark colored metal<br>Step 5: toothpick?<br>Step 6: Repeat step 3";
+                        }
+                        else if (m_Player.IsDrow())
+                        {
+                            description = "Alloys can be crafted using the ]alloy command<br>Adamantite - the alloy of Drow<br>Step 1: dark metal<br>Step 2: dark wood<br>Step 3: rare metal 1<br>Step 4: repeat step 1<br>Step 5: Crystal<br>Step 6: repeat step 4";
+                        }
+                        else if (m_Player.IsElf())
+                        {
+                            description = "Alloys can be crafted using the ]alloy command<br>Ithilmar - the alloy of Elves<br>Step 1: most common metal<br>Step 2: metallic wood?<br>Step 3: rarest metal<br>Step 4: repeat step 1<br>Step 5: Gem<br>Step 6: repeat step 2";
+                        }
+                    }
+                    sendgump = true;
+
+                    break;
+
+                case 195:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.SkilledGatherer);
+                        m_Player.RemainingFeats -= 1;
+
+                        Teiravon.Feats.Functions.SkilledGatherer(m_Player);
+                    }
+
+                    break;
+
+                case 196:
+                    title = "Skilled Gatherer";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "Through dedicated understanding of the uses for raw materials you become more adept at harvesting them.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 197:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.MeditativeConcentration);
+                        m_Player.RemainingFeats -= 1;
+
+                        Teiravon.Feats.Functions.MeditativeConcentration(m_Player);
+                    }
+                    break;
+
+                case 198:
+                    title = "Meditative Concentration";
+                    type = "Passive";
+                    progress = "None";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "Through a focused concentration on the arcane forces flowing through the world, you are able to enter a restorative trance";
+
+                    sendgump = true;
+
+                    break;
+
+                case 199:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.Flurry);
+                        m_Player.RemainingFeats -= 1;
+                    }
+                    break;
+
+                case 200:
+                    title = "Flurry of Blows";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Flurry";
+                    description = "By precise understanding of their martial art the monk is able to rain a number of blows on their fow seemingly simultaniously.";
+
+                    sendgump = true;
+
+                    break;
+
+                case 201:
+                    if (m_Player.PlayerLevel < 10)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.MindBodySoul);
+                        m_Player.RemainingFeats -= 1;
+                        Teiravon.Feats.Functions.MindBodySoul(m_Player);
+                    }
+                    break;
+
+                case 202:
+                    title = "Mind Body and Soul";
+                    type = "Passive";
+                    progress = "None";
+                    prerequisites = "Level 10+";
+                    usage = "Automatic";
+                    description = "Through dedication and discipline the monk is able to train to perfect their Mind, Body, and Soul to their peak condition.";
+                    sendgump = true;
+
+                    break;
+
+                case 203:
+                    if (m_Player.Skills.MagicResist.Base < 100 || m_Player.Skills.Meditation.Base < 100 || m_Player.Skills.Focus.Base < 100)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.WholenessOfSelf);
+                        m_Player.RemainingFeats -= 1;
+                    }
+                    break;
+                
+                case 204:
+                    title = "Wholeness of Self";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "Meditation, Magic Resist, and Focus 100+";
+                    usage = "Automatic";
+                    description = "With absolute mastery of their Mind Body and Soul the Monk can perfect their physical and metaphysical self.";
+                    sendgump = true;
+
+                    break;
+
+                case 205:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.KiStrike);
+                        m_Player.RemainingFeats -= 1;
+                    }
+                    break;
+
+                case 206:
+                    title = "Ki Strike";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "KiStrike";
+                    description = "Through a deep understanding of the movement of life force within all living things the Monk is able to imbue their attacks with their own living essence.";
+                    sendgump = true;
+
+                    break;
+
+                case 207:
+                    if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.BodyOfIron);
+                        m_Player.RemainingFeats -= 1;
+                    }
+                    break;
+
+                case 208:
+                    title = "Body of Iron";
+                    type = "Passive";
+                    progress = "Level";
+                    prerequisites = "None";
+                    usage = "Automatic";
+                    description = "Through intense training the Monk's flesh and bone have toughened considerably, as they grow in experience they become even more impervious.";
+                    sendgump = true;
+
+                    break;
+                
+                case 209:
+                    if (m_Player.PlayerLevel < 10)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.LeapOfClouds);
+                        m_Player.RemainingFeats -= 1;
+                    }
+                    break;
+
+                case 210:
+                    title = "Leap of Clouds";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Level 10+";
+                    usage = "Leap";
+                    description = "A Monk's peak physical condition allows them to perform feats of acrobatics far beyond the hope of any untrained warrior. A monk is able to take to the air and leap across the landscape.";
+                    sendgump = true;
+                    break;
+                
+                case 211:
+                    if (m_Player.PlayerLevel < 5)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.EnchantingMelody);
+                        m_Player.RemainingFeats -= 1;
+                    }
+                    break;
+
+                case 212:
+                    title = "Enchanting Melody";
+                    type = "Active";
+                    progress = "Level";
+                    prerequisites = "Level 5+";
+                    usage = "Melody";
+                    description = "Allows the Bard to play an enchanting tune that those nearby cannot help but stop to listen to.";
+                    sendgump = true;
+                    break;
+            
+                case 213:
+                    if (m_Player.Skills.Provocation.Base < 100)
+                        m_Player.SendMessage(Teiravon.Messages.NoReqs);
+                    else if (m_Player.RemainingFeats < 1)
+                        m_Player.SendMessage(Teiravon.Messages.NoFeatSlots);
+
+                    else
+                    {
+                        m_Player.AddFeat(TeiravonMobile.Feats.CuttingWords);
+                        m_Player.RemainingFeats -= 1;
+                    }
+                    break;
+
+                case 214:
+                    title = "Cutting Words";
+                    type = "Passive";
+                    progress = "None";
+                    prerequisites = "Provocation 100";
+                    usage = "Automatic";
+                    description = "The Bard has traveled far and wide and gained a meager understanding of a great many skills such as Cartography, ";
+                    sendgump = true;
+                    break;
+            }
+			if ( sendgump )
+				m_Player.SendGump( new FeatDescGump( title, type, progress, prerequisites, usage, description, m_Player ) );
+
+		}
+	}
+
+	public class FeatDescGump : Gump
+	{
+		public FeatDescGump( string title, string type, string progress, string prerequisites, string usage, string description, TeiravonMobile m_Player ) : base( 75, 92 )
+		{
+			m_Player.CloseGump( typeof(FeatDescGump) );
+
+			AddPage( 0 );
+
+			AddBackground( 70, 80, 505, 360, 3600 );
+			//AddBackground( 95, 125, 455, 290, 9350 );
+			AddLabel( 255, 100, 150, title );
+
+			AddLabel( 115, 135, 150, "Feat Type: " + type );
+			AddLabel( 320, 135, 150, "Progress Type: " + progress );
+			AddLabel( 115, 160, 150, "Prerequisites: " + prerequisites );
+			AddLabel( 115, 185, 150, "Usage: " + usage );
+			AddLabel( 115, 210, 150, "Description: " );
+			AddHtml( 130, 235, 350, 200, "<basefont size=\"8\" color=\"#ffffff\">" + description + "</basefont>", false, false );
+
+			AddButton( 515, 388, 4014, 4016, 1, GumpButtonType.Reply, 0 );
+		}
+
+		public override void OnResponse( Server.Network.NetState sender, RelayInfo info )
+		{
+			TeiravonMobile m_Player = (TeiravonMobile) sender.Mobile;
+
+			m_Player.SendGump( new FeatsGump( m_Player ) );
+		}
+	}
+}

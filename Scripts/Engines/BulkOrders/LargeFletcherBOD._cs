@@ -1,0 +1,252 @@
+using System;
+using System.Collections;
+using Server;
+using Server.Items;
+using Mat = Server.Engines.BulkOrders.BulkMaterialType;
+
+namespace Server.Engines.BulkOrders
+{
+	[TypeAlias( "Scripts.Engines.BulkOrders.LargeFletcherBOD" )]
+	public class LargeFletcherBOD : LargeBOD
+	{
+		public static double[] m_FletcherMaterialChances = new double[]
+			{
+				0.501953125, // None
+				0.250000000, // Pine
+				0.125000000, // Redwood
+				0.062500000, // White Pine
+				0.031250000, // Ashwood
+				0.015625000, // Silver Birch
+				0.007812500, // Yew
+				0.005859375, // Black Oak
+			};
+
+		public override int ComputeFame()
+		{
+			int bonus = 0;
+
+			if ( RequireExceptional )
+				bonus += 50;
+
+			if ( Material >= BulkMaterialType.DullCopper && Material <= BulkMaterialType.Valorite )
+				bonus += 50 * (1 + (int)(Material - BulkMaterialType.DullCopper));
+			else if ( Material >= BulkMaterialType.Spined && Material <= BulkMaterialType.Barbed )
+				bonus += 100 * (1 + (int)(Material - BulkMaterialType.Spined));
+			else if ( Material >= BulkMaterialType.Pine && Material <= BulkMaterialType.SilverBirch )
+				bonus += 50 * (1 + (int)(Material - BulkMaterialType.Pine));
+			else if ( Material >= BulkMaterialType.Yew && Material <= BulkMaterialType.BlackOak )
+				bonus += 100 * (1 + (int)(Material - BulkMaterialType.Yew));
+
+			return 100 + Utility.Random( bonus );
+		}
+
+		private static int[][][] m_GoldTable = new int[][][]
+			{
+				new int[][] // 5-Part Bow (regular)
+				{
+					new int[]{ 40, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 60, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 80, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 100, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 120, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 140, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 160, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 180, 0, 0, 0, 0, 0, 0, 0, 0 }
+				},
+				new int[][] // 5-Part Bow (exceptional)
+				{
+					new int[]{ 140, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 160, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 180, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 200, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 220, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 240, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 260, 0, 0, 0, 0, 0, 0, 0, 0 },
+					new int[]{ 280, 0, 0, 0, 0, 0, 0, 0, 0 }
+				},
+			};
+
+		public override int ComputeGold()
+		{
+			Type primaryType;
+
+			if ( Entries.Length > 0 )
+				primaryType = Entries[0].Details.Type;
+			else
+				return 0;
+
+			bool isBow = ( primaryType == typeof( Bow ) );
+
+			int index;
+
+			if ( isBow )
+				index = 1;
+			else
+				index = 0;
+
+			index *= 2;
+
+			if ( RequireExceptional )
+				++index;
+
+			if ( index < m_GoldTable.Length )
+			{
+				int[][] table = m_GoldTable[index];
+
+				if ( AmountMax >= 20 )
+					index = 2;
+				else if ( AmountMax >= 15 )
+					index = 1;
+				else
+					index = 0;
+
+				if ( index < table.Length )
+				{
+					int[] list = table[index];
+
+					if ( Material >= BulkMaterialType.Pine && Material <= BulkMaterialType.BlackOak )
+						index = (1 + (int)(Material - BulkMaterialType.Pine));
+					else
+						index = 0;
+
+					if ( index < list.Length )
+						//return list[index];
+						// TEMP FIX
+						return 200;
+				}
+			}
+
+			return 0;
+		}
+
+		[Constructable]
+		public LargeFletcherBOD()
+		{
+			LargeBulkEntry[] entries;
+			//bool useMaterials = true;
+			BulkMaterialType material;
+
+			entries = LargeBulkEntry.ConvertEntries( this, LargeBulkEntry.Bows );
+			material = GetRandomMaterial( BulkMaterialType.Pine, m_FletcherMaterialChances );
+
+			int hue = 0x20;
+			int amountMax = Utility.RandomList( 10, 15, 20, 20 );
+			bool reqExceptional = ( 0.825 > Utility.RandomDouble() );
+
+			this.Hue = hue;
+			this.AmountMax = amountMax;
+			this.Entries = entries;
+			this.RequireExceptional = reqExceptional;
+			this.Material = material;
+		}
+
+		public LargeFletcherBOD( int amountMax, bool reqExceptional, BulkMaterialType mat, LargeBulkEntry[] entries )
+		{
+			this.Hue = 0x20;
+			this.AmountMax = amountMax;
+			this.Entries = entries;
+			this.RequireExceptional = reqExceptional;
+			this.Material = mat;
+		}
+
+		public int High( Mat mat )
+		{
+			return 2 + (3 * (int)mat);
+		}
+
+		public int Low( Mat mat )
+		{
+			return 3 * (int)mat;
+		}
+
+		public bool Check( int val )
+		{
+			int ours = ( AmountMax < 20 ? Low( Material ) : High( Material ) );
+
+			return ( ours == val );
+		}
+
+		public bool Check( int min, int max )
+		{
+			int ours = ( AmountMax < 20 ? Low( Material ) : High( Material ) );
+
+			return ( ours >= min && ours <= max );
+		}
+
+		private bool Check( Mat val )
+		{
+			return ( Material == val );
+		}
+
+		private bool Check( Mat start, Mat end )
+		{
+			return ( Material >= start && Material <= end );
+		}
+
+		public override ArrayList ComputeRewards()
+		{
+			Type primaryType;
+
+			if ( Entries.Length > 0 )
+				primaryType = Entries[0].Details.Type;
+			else
+				return new ArrayList();
+
+			bool ps5 = false, ps10 = false, ps15 = false, ps20 = false;
+
+			bool isBow = ( primaryType == typeof( Bow ) );
+
+			if ( isBow )
+			{
+				if ( RequireExceptional )
+				{
+					ps5 = Check( Low( Mat.None ) );
+					ps10 = Check( High( Mat.None ) );
+					ps20 = Check( Low( Mat.Pine ), Low( Mat.Redwood ) );
+
+				}
+				else
+				{
+					ps5 = Check( Mat.Pine );
+					ps10 = Check( Mat.Pine, Mat.Redwood );
+					ps15 = Check( Mat.Redwood, Mat.WhitePine );
+					ps20 = Check( Mat.WhitePine, Mat.Ashwood );
+					
+				}
+			}
+			
+			ArrayList list = new ArrayList();
+
+			if ( ps5 )
+				list.Add( new PowerScroll( SkillName.Fletching, 105 ) );
+
+			if ( ps10 )
+				list.Add( new PowerScroll( SkillName.Fletching, 110 ) );
+
+			if ( ps15 )
+				list.Add( new PowerScroll( SkillName.Fletching, 115 ) );
+
+			if ( ps20 )
+				list.Add( new PowerScroll( SkillName.Fletching, 120 ) );
+			return list;
+		}
+
+		public LargeFletcherBOD( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+		}
+	}
+}

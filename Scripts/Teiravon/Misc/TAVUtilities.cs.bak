@@ -1,0 +1,444 @@
+using System;
+using System.Collections;
+using Server;
+using Server.Items;
+using Server.Mobiles;
+using Server.Network;
+using Server.Targeting;
+using Server.Spells;
+using MoveImpl = Server.Movement.MovementImpl;
+
+namespace Server.Teiravon
+{
+    public class TAVUtilities
+    {
+        #region Movement
+        private PathFollower m_Path;
+        private Mobile m_ToMove;
+        private static Queue m_Obstacles = new Queue();
+
+        public bool MovePlayer(Mobile toMove, Mobile target, bool run, int range)
+        {
+            if (toMove.Deleted || toMove.Frozen || target == null || target.Deleted)
+                return false;
+
+            if (toMove.InRange(target, range))
+            {
+                m_Path = null;
+                return true;
+            }
+
+            m_ToMove = toMove;
+
+            if (m_Path != null && m_Path.Goal == target)
+            {
+                if (m_Path.Follow(run, 1))
+                {
+                    m_Path = null;
+                    return true;
+                }
+            }
+            else if (!DoMove(toMove.GetDirectionTo(target), true))
+            {
+                m_Path = new PathFollower(toMove, target);
+                m_Path.Mover = new MoveMethod(DoMoveImpl);
+
+                if (m_Path.Follow(run, 1))
+                {
+                    m_Path = null;
+                    return true;
+                }
+            }
+            else
+            {
+                m_Path = null;
+                return true;
+            }
+
+            return false;
+        }
+
+        public MoveResult DoMoveImpl(Direction d)
+        {
+            if (m_ToMove.Deleted || m_ToMove.Frozen || m_ToMove.Paralyzed || (m_ToMove.Spell != null && m_ToMove.Spell.IsCasting))
+                return MoveResult.BadState;
+
+            // This makes them always move one step, never any direction changes
+            m_ToMove.Direction = d;
+
+            m_ToMove.Pushing = false;
+
+            MoveImpl.IgnoreMovableImpassables = false;
+
+            if ((m_ToMove.Direction & Direction.Mask) != (d & Direction.Mask))
+            {
+                bool v = m_ToMove.Move(d);
+
+                MoveImpl.IgnoreMovableImpassables = false;
+                return (v ? MoveResult.Success : MoveResult.Blocked);
+            }
+            else if (!m_ToMove.Move(d))
+            {
+                bool wasPushing = m_ToMove.Pushing;
+
+                bool blocked = true;
+
+                Map map = m_ToMove.Map;
+
+                if (map != null)
+                {
+                    int x = m_ToMove.X, y = m_ToMove.Y;
+                    Movement.Movement.Offset(d, ref x, ref y);
+
+                    IPooledEnumerable eable = map.GetItemsInRange(new Point3D(x, y, m_ToMove.Location.Z), 1);
+
+                    foreach (Item item in eable)
+                    {
+                        if (item is BaseDoor && (item.Z + item.ItemData.Height) > m_ToMove.Z && (m_ToMove.Z + 16) > item.Z)
+                        {
+                            if (item.X != x || item.Y != y)
+                                continue;
+
+                            BaseDoor door = (BaseDoor)item;
+
+                            if (!door.Locked || !door.UseLocks())
+                                m_Obstacles.Enqueue(door);
+                        }
+                    }
+
+                    eable.Free();
+
+                    if (m_Obstacles.Count > 0)
+                        blocked = false; // retry movement
+
+                    while (m_Obstacles.Count > 0)
+                    {
+                        Item item = (Item)m_Obstacles.Dequeue();
+
+                        if (item is BaseDoor)
+                            ((BaseDoor)item).Use(m_ToMove);
+                    }
+
+                    if (!blocked)
+                        blocked = !m_ToMove.Move(d);
+                }
+
+                if (blocked)
+                {
+                    int offset = (Utility.RandomDouble() >= 0.6 ? 1 : -1);
+
+                    for (int i = 0; i < 2; ++i)
+                    {
+                        int v = (int)m_ToMove.Direction;
+
+                        m_ToMove.SetDirection((Direction)((((v & 0x7) + offset) & 0x7) | (v & 0x80)));
+
+                        if (m_ToMove.Move(m_ToMove.Direction))
+                        {
+                            MoveImpl.IgnoreMovableImpassables = false;
+                            return MoveResult.SuccessAutoTurn;
+                        }
+                    }
+
+                    MoveImpl.IgnoreMovableImpassables = false;
+                    return (wasPushing ? MoveResult.BadState : MoveResult.Blocked);
+                }
+                else
+                {
+                    MoveImpl.IgnoreMovableImpassables = false;
+                    return MoveResult.Success;
+                }
+            }
+
+            MoveImpl.IgnoreMovableImpassables = false;
+            return MoveResult.Success;
+        }
+
+        public bool DoMove(Direction d, bool badStateOk)
+        {
+            MoveResult res = DoMoveImpl(d);
+
+            return (res == MoveResult.Success || res == MoveResult.SuccessAutoTurn || (badStateOk && res == MoveResult.BadState));
+        }
+        #endregion
+
+        //Takes 2 ints and divides them into an accurate double value. If int 2 is 0, 0 is returned.
+        public static double DoubleDivide(int int1, int int2)
+        {
+            if (int2 == 0) //avoid division by 0
+                return 0.0;
+            double result = ((double)int1) / ((double)int2);
+            return result;
+        }
+
+        //returns the int percent value of a double
+        public static int DoubleToPercentage(double value)
+        {
+            int result = ((int)(value * 100));
+            return result;
+        }
+
+        public static int GetSkillLevel(Mobile m, SkillName skill)
+        {
+            if (m.Skills[skill].Value < 10.0)
+                return 0;
+            else if (m.Skills[skill].Value <= 25.0)
+                return 1;
+            else if (m.Skills[skill].Value <= 40.0)
+                return 2;
+            else if (m.Skills[skill].Value <= 55.0)
+                return 3;
+            else if (m.Skills[skill].Value <= 70.0)
+                return 4;
+            else if (m.Skills[skill].Value <= 85.0)
+                return 5;
+            else if (m.Skills[skill].Value <= 100.0)
+                return 6;
+            else if (m.Skills[skill].Value >= 115.0)
+                return 7;
+
+            return 0;
+        }
+
+        public static int CalculateLevel(Mobile creature)
+        {
+            int level = 0;
+            int hitty = 0;
+            int tanky = 0;
+            int casty = 0;
+
+            tanky = (int)(((creature.HitsMax + creature.StamMax) / 20) + ((creature.PhysicalResistance + creature.FireResistance + creature.ColdResistance + creature.PoisonResistance + creature.EnergyResistance) / 5));
+            BaseWeapon wep = creature.Weapon as BaseWeapon;
+            int DamageMax;
+            int DamageMin;
+            creature.Weapon.GetStatusDamage(creature,out DamageMax,out DamageMin);
+            int damagebonus = (DamageMax + DamageMin) / 2;
+            hitty = (int)((creature.Skills.Wrestling.Value) + (100 - (wep.GetDelay(creature).TotalSeconds * 25)) + (damagebonus * 3));
+
+            casty = (int)((creature.Skills.Magery.Value) + (creature.Skills.EvalInt.Value) + ((creature.ManaMax + creature.Int) / 20));
+            if (hitty + casty < tanky)
+                tanky = (int)(tanky * .5);
+            casty = (int)(casty * .75);
+
+            level = (int)Math.Round(((tanky + hitty + casty) * .1));
+
+            #region OldCalc
+            /*
+           // Console.WriteLine("-----------");
+           // Console.WriteLine("Creature: {0}", creature.Name);
+            
+
+            int stats = (creature.Str + creature.Dex + creature.Int + creature.HitsMax + creature.StamMax + creature.ManaMax) / 6;
+            
+            //Console.WriteLine("Stats: {0}", stats);
+            if (stats <= 100)
+                stats = stats * 2;
+            else if (stats <= 200)
+                stats = (int)(stats * 1.50);
+            else if (stats > 200 && stats < 500) 
+                stats = (int)(stats *1.1);
+            else if (stats <= 1000 && stats >= 500)
+                stats = (int)(stats * .80);
+            else if (stats <= 5000)
+                stats = (int)(stats * .60);
+            else
+                stats = (int)(stats * .4);
+
+            level = (int)(stats / 75);
+
+            if (level == 0)
+                level = 1;
+
+            
+           // Console.WriteLine( "AStats: {0}, Level: {1}", stats, level );
+
+            double[] combatskills = new double[] {
+				creature.Skills.Archery.Base,
+				creature.Skills.Fencing.Base,
+				creature.Skills.Macing.Base,
+				creature.Skills.Parry.Base,
+				creature.Skills.Swords.Base,
+				creature.Skills.Tactics.Base,
+				//creature.Skills.Wrestling.Base,
+				creature.Skills.Anatomy.Base,
+				creature.Skills.Focus.Base };
+
+            double combatbonus = 0.0;
+            double count = 0.0;
+
+            for (int i = 0; i < combatskills.Length; i++)
+            {
+                if (combatskills[i] > 20.0 )
+                {
+                    combatbonus += combatskills[i];
+                    count++;
+                }
+            }
+            
+            combatbonus += creature.Skills.Wrestling.Base;
+            count++;
+
+            int combatlevel = 0;
+            int magerylevel = 0;
+
+            if (count != 0.0 && combatbonus != 0.0)
+                combatbonus /= count;
+
+            if (combatbonus == 0.0)
+                combatlevel += 0;
+            else if (combatbonus <= 30.0)
+                combatlevel += 1;
+            else if (combatbonus > 30.0 && combatbonus <= 45.0)
+                combatlevel += 2;
+            else if (combatbonus > 45.0 && combatbonus <= 60.0)
+                combatlevel += 2;
+            else if (combatbonus > 60.0 && combatbonus <= 75.0)
+                combatlevel += 3;
+            else if (combatbonus > 75.0 && combatbonus <= 90.0)
+                combatlevel += 4;
+            else if (combatbonus > 90.0 && combatbonus <= 105.0)
+                combatlevel += 5;
+            else
+                combatlevel += 6;
+
+            double magerybonus = 0.0;
+            count = 0.0;
+
+            if (creature.Skills.Magery.Base > 0.0)
+            {
+                magerybonus += creature.Skills.Magery.Base;
+                count++;
+            }
+
+            if (creature.Skills.EvalInt.Base > 0.0)
+            {
+                magerybonus += creature.Skills.EvalInt.Base;
+                count++;
+            }
+
+            if (magerybonus != 0.0 && count != 0.0)
+                magerybonus /= count;
+
+            if (magerybonus == 0.0)
+                magerylevel += 0;
+            else if (magerybonus <= 30.0)
+                magerylevel += 0;
+            else if (magerybonus > 30.0 && magerybonus <= 45.0)
+                magerylevel += 1;
+            else if (magerybonus > 45.0 && magerybonus <= 60.0)
+                magerylevel += 2;
+            else if (magerybonus > 60.0 && magerybonus <= 75.0)
+                magerylevel += 3;
+            else if (magerybonus > 75.0 && magerybonus <= 85.0)
+                magerylevel += 4;
+            else if (magerybonus > 85.0 && magerybonus <= 95.0)
+                magerylevel += 5;
+            else if (magerybonus > 95.0 && magerybonus <= 105.0)
+                magerylevel += 6;
+            else
+                magerylevel += 7;
+
+            if (magerylevel >= combatlevel)
+                level += magerylevel + (combatlevel / 2);
+            else if (magerylevel != 0)
+                level += ((combatlevel) + (magerylevel / 2));
+            else
+                level += combatlevel;
+
+            //Console.WriteLine( "Combats: {0} / Magery: {1}, Level: {2}", combatbonus, magerybonus, level );
+            int DamageMax = 0;
+            int DamageMin = 0;
+            if (creature.Weapon != null)
+                creature.Weapon.GetStatusDamage(creature,out DamageMax,out DamageMin);
+
+            int damagebonus = (DamageMax + DamageMin) / 2;
+
+            if (damagebonus == 0)
+                level += 0;
+            else if (damagebonus > 0 && damagebonus <= 6)
+                level += 1;
+            else if (damagebonus > 6 && damagebonus <= 12)
+                level += 2;
+            else if (damagebonus > 12 && damagebonus <= 20)
+                level += 3;
+            else if (damagebonus > 20 && damagebonus <= 28)
+                level += 4;
+            else if (damagebonus > 28 && damagebonus <= 38)
+                level += 5;
+            else if (damagebonus > 38 && damagebonus <= 48)
+                level += 6;
+            else if (damagebonus > 48 && damagebonus <= 60)
+                level += 7;
+            else
+                level += 8;
+
+            //Console.WriteLine( "Damage Avg: {0}, Level: {1}", damagebonus, level );
+
+            int resistbonus = (creature.PhysicalResistance + creature.FireResistance + creature.ColdResistance + creature.PoisonResistance + creature.EnergyResistance) / 5;
+
+            if (resistbonus <= 10)
+                level += 0;
+            else if (resistbonus > 10 && resistbonus <= 25)
+                level += 0;
+            else if (resistbonus > 25 && resistbonus <= 40)
+                level += 1;
+            else if (resistbonus > 40 && resistbonus <= 55)
+                level += 2;
+            else if (resistbonus > 55 && resistbonus <= 65)
+                level += 3;
+            else
+                level += 4;
+
+            //Console.WriteLine( "Resists: {0}, Level: {1}", resistbonus, level );
+
+            if (level > 25)
+                level = 25;
+            else if (level < 0)
+                level = 0;
+
+            //Console.WriteLine( "Adjusted Level: {0}", level );
+            */
+            #endregion
+            return level;
+        }
+
+        public static string MoraleToMessage(double amount)
+        {
+            if (amount == 0)
+                return "You feel like yourself.";
+            else if (amount > 0 && amount <= 2.0)
+                return "You feel more confident than usual.";
+            else if (amount > 2.0 && amount <= 4.0)
+                return "You feel exceptionally more confident than usual.";
+            else if (amount >= 5.0)
+                return "You feel as if you could do anything.";
+            else if (amount < 0 && amount >= -2.0)
+                return "You feel weaker than usual.";
+            else if (amount < -2.0 && amount >= -4.0)
+                return "You feel exceptionally weaker than usual.";
+            else if (amount <= -5.0)
+                return "You feel as if you can't do anything right.";
+            else
+                return "You feel like yourself.";
+        }
+        public static string ConsiderDif(int amount)
+        {
+            if (amount == 0)
+                return "It looks dead even.";
+            else if (amount > 0 && amount <= 2)
+                return "It's about even.";
+            else if (amount > 2 && amount <= 4)
+                return "You feel sure of victory.";
+            else if (amount >= 5)
+                return "They're no threat.";
+            else if (amount < 0 && amount >= -2)
+                return "They may be a little challenging.";
+            else if (amount < -2 && amount >= -4)
+                return "This appears risky.";
+            else if (amount <= -5)
+                return "Now is the time to flee.";
+            else
+                return "It looks about even.";
+        }
+    }
+}

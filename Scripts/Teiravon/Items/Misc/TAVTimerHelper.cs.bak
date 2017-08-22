@@ -1,0 +1,370 @@
+using System;
+using Server;
+using Server.Mobiles;
+using Server.Teiravon;
+
+using TAVFeats = Server.Mobiles.TeiravonMobile.Feats;
+
+namespace Server.Items
+{
+	public class TimerHelper : Item
+	{
+		private bool m_Stats = false;
+		private bool m_Skills = false;
+		private bool m_Feat = false;
+		private bool m_EmoteOn = false;
+		private bool m_MessageOn = false;
+		private bool m_PotionOn = false;
+
+		private double[] m_SkillMods = new double[52];
+
+		private int m_StrMod = 0;
+		private int m_DexMod = 0;
+		private int m_IntMod = 0;
+		private int m_HitsMaxMod = 0;
+		private int m_StamMaxMod = 0;
+		private int m_ManaMaxMod = 0;
+		private int m_PlayerSerial = 0;
+
+		private TAVFeats m_FeatMod = TAVFeats.None;
+
+		private TimeSpan m_Duration;
+		private DateTime m_EndTime;
+
+		private PotionEffect m_Potion;
+
+		private string m_Message = "Message";
+		private string m_Emote = "Emote";
+
+		public bool DoStatMods { get { return m_Stats; } set { m_Stats = value; } }
+		public bool DoSkillMods { get { return m_Skills; } set { m_Skills = value; } }
+		public bool DoFeat { get { return m_Feat; } set { m_Feat = value; } }
+		public bool MessageOn { get { return m_MessageOn; } set { m_MessageOn = value; } }
+		public bool EmoteOn { get { return m_EmoteOn; } set { m_EmoteOn = value; } }
+		public int StrMod { get { return m_StrMod; } set { m_StrMod = value; } }
+		public int DexMod { get { return m_DexMod; } set { m_DexMod = value; } }
+		public int IntMod { get { return m_IntMod; } set { m_IntMod = value; } }
+		public int HitsMaxMod { get { return m_HitsMaxMod; } set { m_HitsMaxMod = value; } }
+		public int StamMaxMod { get { return m_StamMaxMod; } set { m_StamMaxMod = value; } }
+		public int ManaMaxMod { get { return m_ManaMaxMod; } set { m_ManaMaxMod = value; } }
+		public TimeSpan Duration { get { return m_Duration; } set { m_Duration = value; } }
+		public DateTime EndTime { get { return m_EndTime; } set { m_EndTime = value; } }
+		public TAVFeats Feat { get { return m_FeatMod; } set { m_FeatMod = value; } }
+		public PotionEffect Potion{ get { return m_Potion; } set { m_Potion = value; m_PotionOn = true; } }
+		public int PlayerSerial{ get { return m_PlayerSerial; } set { m_PlayerSerial = value; } }
+		public string Message{ get { return m_Message; } set { m_Message = value; } }
+		public string Emote{ get { return m_Emote; } set { m_Emote = value; } }
+
+		public void Start()
+		{
+			m_EndTime = DateTime.Now + m_Duration;
+
+			InternalTimer m_Timer = new InternalTimer(
+				m_PlayerSerial, (int)this.Serial, m_Duration, m_Stats, m_Skills, m_Feat, m_MessageOn, m_EmoteOn, m_PotionOn, m_Potion, m_StrMod, m_DexMod, m_IntMod, m_HitsMaxMod,
+				m_StamMaxMod, m_ManaMaxMod, m_FeatMod, m_SkillMods, m_Message, m_Emote );
+
+			m_Timer.Start();
+
+			Point3D p = new Point3D( 1, 1, 0 );
+
+			MoveToWorld( p, Map.Felucca );
+		}
+
+		[Constructable]
+		public TimerHelper( int serial ) : base( Teiravon.Items.StarSapphire )
+		{
+			TeiravonMobile m_Player = (TeiravonMobile)World.FindMobile( (Serial)serial );
+
+			Name = "Timer Helper for " + m_Player.Name;
+			Visible = false;
+			Movable = false;
+
+			m_PlayerSerial = serial;
+
+			for ( int i = 0; i <= 51; ++i ) { m_SkillMods[i] = 0; }
+		}
+
+		public TimerHelper( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (bool) m_Stats );
+			writer.Write( (bool) m_Skills );
+			writer.Write( (bool) m_Feat );
+			writer.Write( (bool) m_MessageOn );
+			writer.Write( (bool) m_EmoteOn );
+			writer.Write( (bool) m_PotionOn );
+
+			writer.Write( (int) m_StrMod );
+			writer.Write( (int) m_DexMod );
+			writer.Write( (int) m_IntMod );
+			writer.Write( (int) m_HitsMaxMod );
+			writer.Write( (int) m_StamMaxMod );
+			writer.Write( (int) m_ManaMaxMod );
+
+			writer.Write( (DateTime) m_EndTime );
+
+			writer.Write( (int) m_FeatMod );
+
+			writer.Write( (int) m_PlayerSerial );
+
+			if ( m_MessageOn )
+				writer.Write( (string) m_Message );
+
+			if ( m_EmoteOn )
+				writer.Write( (string) m_Emote );
+
+			if ( m_PotionOn )
+				writer.Write( (int)m_Potion );
+
+			for ( int i = 0; i < 52; i++ )
+			{
+				writer.Write( (double)m_SkillMods[i] );
+			}
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			TimeSpan m_TimeLeft = new TimeSpan();
+			TimeSpan m_Compare = new TimeSpan( 0, 0, 0);
+
+			m_Stats = reader.ReadBool();
+			m_Skills = reader.ReadBool();
+			m_Feat = reader.ReadBool();
+			m_MessageOn = reader.ReadBool();
+			m_EmoteOn = reader.ReadBool();
+			m_PotionOn = reader.ReadBool();
+
+			m_StrMod = reader.ReadInt();
+			m_DexMod = reader.ReadInt();
+			m_IntMod = reader.ReadInt();
+			m_HitsMaxMod = reader.ReadInt();
+			m_StamMaxMod = reader.ReadInt();
+			m_ManaMaxMod = reader.ReadInt();
+
+			m_EndTime = reader.ReadDateTime();
+
+			m_FeatMod = (TAVFeats) reader.ReadInt();
+
+			m_PlayerSerial = reader.ReadInt();
+
+			if ( m_MessageOn )
+				m_Message = reader.ReadString();
+
+			if ( m_EmoteOn )
+				m_Message = reader.ReadString();
+
+			if ( m_PotionOn )
+				m_Potion = (PotionEffect) reader.ReadInt();
+
+			for ( int i = 0; i < 52; i++ )
+			{
+				m_SkillMods[i] = reader.ReadDouble();
+			}
+
+			// Remaining time check
+			m_TimeLeft = m_EndTime.Subtract( DateTime.Now );
+
+			if (  TimeSpan.Compare( m_TimeLeft, m_Compare ) <= 0 )
+				m_TimeLeft = new TimeSpan( 0, 0, 0 );
+
+			InternalTimer m_Timer = new InternalTimer(
+				m_PlayerSerial, (int)this.Serial, m_TimeLeft, m_Stats, m_Skills, m_Feat, m_MessageOn, m_EmoteOn, m_PotionOn, m_Potion, m_StrMod, m_DexMod, m_IntMod, m_HitsMaxMod,
+				m_StamMaxMod, m_ManaMaxMod, m_FeatMod, m_SkillMods, m_Message, m_Emote );
+
+			m_Timer.Start();
+		}
+
+		private class InternalTimer : Timer
+		{
+			bool m_Stats = false;
+			bool m_Skills = false;
+			bool m_Feat = false;
+			bool m_MessageOn = false;
+			bool m_EmoteOn = false;
+			bool m_PotionOn = false;
+
+			int m_StrMod = 0;
+			int m_DexMod = 0;
+			int m_IntMod = 0;
+			int m_HitsMaxMod = 0;
+			int m_StamMaxMod = 0;
+			int m_ManaMaxMod = 0;
+			int m_HelperSerial = 0;
+
+			private double[] m_SkillMods = new double[52];
+
+			TimeSpan m_TimeLeft = new TimeSpan( 0, 0, 0 );
+
+			TAVFeats m_FeatMod = TAVFeats.None;
+
+			PotionEffect m_PotionEffect;
+
+			string m_Message = "Timer Expired System Message.";
+			string m_Emote = "Timer Expired Emote.";
+			int m_PlayerSerial = 0;
+
+			public InternalTimer(
+				int serial, int helperserial, TimeSpan timeleft, bool stats, bool skills, bool feat, bool messageon, bool emoteon, bool potionon, PotionEffect potion, int strmod,
+				int dexmod, int intmod, int hitsmaxmod, int stammaxmod, int manamaxmod, TAVFeats featmod, double[] skillmods,
+				string message, string emote ) : base( timeleft )
+			{
+				m_Stats = stats;
+				m_Skills = skills;
+				m_Feat = feat;
+				m_MessageOn = messageon;
+				m_EmoteOn = emoteon;
+				m_PotionOn = potionon;
+				m_PotionEffect = potion;
+
+				m_StrMod = strmod;
+				m_DexMod = dexmod;
+				m_IntMod = intmod;
+				m_HitsMaxMod = hitsmaxmod;
+				m_StamMaxMod = stammaxmod;
+				m_ManaMaxMod = manamaxmod;
+				m_PlayerSerial = serial;
+				m_HelperSerial = helperserial;
+
+				m_TimeLeft = timeleft;
+
+				m_FeatMod = featmod;
+
+				m_Message = message;
+				m_Emote = emote;
+
+				m_SkillMods = skillmods;
+			}
+
+			protected override void OnTick()
+			{
+				try {
+					TeiravonMobile m_Player = (TeiravonMobile)World.FindMobile( (Serial)m_PlayerSerial );
+					Item m_TimerHelper = World.FindItem( (Serial)m_HelperSerial );
+
+					if ( m_Player == null )
+						return;
+
+					if ( m_TimerHelper == null )
+						return;
+
+					if ( m_Stats )
+					{
+						m_Player.Str += m_StrMod;
+						m_Player.Dex += m_DexMod;
+						m_Player.Int += m_IntMod;
+						m_Player.MaxMana += m_ManaMaxMod;
+						m_Player.MaxStam += m_StamMaxMod;
+						m_Player.MaxHits += m_HitsMaxMod;
+					}
+
+					if ( m_Skills )
+						for ( int i = 0; i <= 51; i++ ) { m_Player.Skills[i].Base += m_SkillMods[i]; }
+
+					if ( m_Feat )
+					{
+						m_Player.SetActiveFeats( m_FeatMod, false );
+						m_Player.CheckResistanceBonus();
+					}
+
+
+					if ( m_MessageOn )
+						m_Player.SendMessage( m_Message );
+
+					if ( m_EmoteOn )
+						m_Player.Emote( m_Emote );
+
+					if ( m_TimerHelper != null && m_TimerHelper is TimerHelper )
+						m_TimerHelper.Delete();
+
+					if ( m_PotionOn )
+					{
+						switch ( m_PotionEffect )
+						{
+							case PotionEffect.Chameleon:
+								m_Player.SolidHueOverride = -1;
+								m_Player.SetActivePotions( Server.Items.PotionEffect.Chameleon, false );
+
+								break;
+
+							case PotionEffect.Float:
+							case PotionEffect.GreaterFloat:
+							case PotionEffect.LesserFloat:
+								if ( m_PotionEffect == PotionEffect.LesserFloat )
+									m_Player.Z -= 5;
+								else if ( m_PotionEffect == PotionEffect.Float )
+									m_Player.Z -= 10;
+								else if ( m_PotionEffect == PotionEffect.GreaterFloat )
+									m_Player.Z -= 15;
+
+								m_Player.CantWalk = false;
+								m_Player.SetActivePotions( Server.Items.PotionEffect.LesserFloat, false );
+								m_Player.SetActivePotions( Server.Items.PotionEffect.Float, false );
+								m_Player.SetActivePotions( Server.Items.PotionEffect.GreaterFloat, false );
+
+								m_Player.Emote( "*fall down with a thud!*" );
+
+								break;
+
+							case PotionEffect.Sustenance:
+								m_Player.SetActivePotions( Server.Items.PotionEffect.Sustenance, false );
+
+								break;
+
+							case PotionEffect.GreaterSustenance:
+								m_Player.SetActivePotions( Server.Items.PotionEffect.GreaterSustenance, false );
+
+								break;
+
+							case PotionEffect.GenderSwap:
+								m_Player.BodyMod = 0;
+								m_Player.SetActivePotions( Server.Items.PotionEffect.GenderSwap, false );
+
+								break;
+
+							case PotionEffect.Invisibility:
+								if ( m_Player.GetActivePotions( m_PotionEffect ) && m_Player.Hidden )
+								{
+									m_Player.Hidden = false;
+									m_Player.SetActivePotions( PotionEffect.Invisibility, false );
+								} else if ( m_Player.GetActivePotions( m_PotionEffect ) && !m_Player.Hidden ) {
+									m_Player.SetActivePotions( PotionEffect.Invisibility, false );
+								}
+
+								break;
+
+							case PotionEffect.ManaRefresh:
+								m_Player.SetActivePotions( Server.Items.PotionEffect.ManaRefresh, false );
+
+								break;
+
+							case PotionEffect.TotalManaRefresh:
+								m_Player.SetActivePotions( Server.Items.PotionEffect.TotalManaRefresh, false );
+
+								break;
+
+							case PotionEffect.MagicResist:
+								m_Player.SetActivePotions( Server.Items.PotionEffect.MagicResist, false );
+
+								break;
+
+							case PotionEffect.Invulnerability:
+								m_Player.SetActivePotions( Server.Items.PotionEffect.Invulnerability, false );
+
+								break;
+						}
+					}
+
+				} catch {
+					return;
+				}
+			}
+		}
+	}
+}

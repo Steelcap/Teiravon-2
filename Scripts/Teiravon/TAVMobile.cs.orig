@@ -1,0 +1,4061 @@
+using System;
+using System.IO;
+using System.Collections;
+using System.Data;
+using System.Data.OleDb;
+using Microsoft.VisualBasic;
+using Server;
+using Server.Network;
+using Server.Spells;
+using Server.Items;
+using Server.Teiravon;
+using Server.Gumps;
+using Server.Regions;
+using Server.Mobiles;
+using Server.Spells.Necromancy;
+using Server.Misc;
+using Server.Teiravon.War;
+using Server.Accounting;
+using Teiravon.Magecraft;
+
+namespace Server.Mobiles
+{
+	public class TeiravonMobile : PlayerMobile
+	{
+		public static ArrayList HearAllEntries = new ArrayList();
+		public static ArrayList HearAllPartyChat = new ArrayList();
+		public DateTime[] AntiMacroCheckTime = new DateTime[52];
+		public int[] AntiMacroCheckCount = new int[52];
+		private bool m_HearAll = false;
+		public bool HearAll { get { return m_HearAll; } set { m_HearAll = value; if ( HearAll ) HearAllEntries.Add( this ); else HearAllEntries.Remove( this ); } }
+
+		#region Enums
+		public enum Race
+		{
+			None,
+
+			// Standard Races
+			Human = 1,
+			Elf = 2,
+			Drow = 3,
+			Dwarf = 4,
+			Duergar = 5,
+			Orc = 6,
+
+			// Advanced Races
+			Kresh,
+			Undead,
+			Vampire,
+			Giant,
+			HalfElf,
+			Kender,
+			Gnome,
+			Goblin,
+			Teifling
+		}
+
+		public enum Class
+		{
+			None,
+
+			// Standard Classes
+			// Fighters
+			Fighter,
+			Kensai,
+			Cavalier,
+
+			// Clerics
+			Cleric,
+			DarkCleric,
+
+			// Arcane
+			Necromancer,
+			Aeromancer,
+			Aquamancer,
+			Geomancer,
+			Pyromancer,
+
+			// Paladins
+			Paladin,
+			UndeadHunter,
+
+			// Rangers
+			Ranger,
+			Archer,
+
+			// Druids
+			Forester,
+			Shapeshifter,
+
+			// Barbarians
+			Berserker,
+			Dragoon,
+
+			// Rouges
+			Thief,
+			Assassin,
+			MageSlayer,
+
+			// Crafters
+			Blacksmith,
+			Tailor,
+			Woodworker,
+			Bowyer,
+			Alchemist,
+			Tinker,
+			Cook,
+
+			// Advanced Classes
+			Bard,
+			Bladesinger,
+			BloodGuard,
+			ShaolinMonk,
+			DrunkenMaster,
+			Pirate,
+			BountyHunter,
+			DwarvenDefender,
+			Knight,
+			Templar,
+			Sage,
+			Marksman,
+			DeathKnight,
+			SpiderKnight,
+			MasterThief,
+			Shadowdancer
+		}
+
+		public enum Alignment
+		{
+			None,
+
+			LawfulGood,
+			NeutralGood,
+			ChaoticGood,
+			LawfulNeutral,
+			TrueNeutral,
+			ChaoticNeutral,
+			LawfulEvil,
+			NeutralEvil,
+			ChaoticEvil
+		}
+
+		public enum Feats
+		{
+			None,
+
+			WeaponSpecialization,
+			WealthyLineage,
+			Apprenticeship,
+			WarfareTraining,
+			Leadership,
+			MagicResistance,
+			Disguise,
+			Blademaster,
+			GlobeOfDarkness,
+			CloakOfDarkness,
+			CripplingBlow,
+			ResistPoison,
+			ExpertMining,
+			ResistPsionics,
+			Bluudlust,
+			CriticalStrike,
+			BuumBuum,
+			Tuffness,
+			TacticalAssessment,
+			WarMount,
+			AdvancedHealing,
+			HolyAura,
+			WeaponMastery,
+			WeaponMasteryII,
+			ShieldBash,
+			ArmorProficiency,
+			KaiShot,
+			Avoidance,
+			ExoticWeapons,
+			ResistPoisons,
+			MountedCombat,
+			DetectEvil,
+			LayOnHands,
+			TurnUndead,
+			ResistCurses,
+			DivineAura,
+			ElementalResistance,
+			DragonRoar,
+			BerserkerRage,
+			BarbarianInstinct,
+			PowerLunge,
+			ChargedStrike,
+			AlchemyScience,
+			BestowBlessing,
+			BestowDarkBlessing,
+			DivineMight,
+			UnholyMight,
+			NetherAura,
+			DivineHealing,
+			RebukeUndead,
+			UnholyAura,
+			DarkAura,
+			BestowCurse,
+			UnholyRestoration,
+			RacialEnemy,
+			ExtraRacialEnemy,
+			Orientation,
+			AnimalCompanion,
+			FlushCreatures,
+			AdvancedTracking,
+			ExtraFavoredEnemy,
+			Foraging,
+			BeastLore,
+			WildernessLore,
+			WildShape,
+			Bite,
+			Forensics,
+			CalledShot,
+			ChargedMissile,
+			Marksmanship,
+			BowSpecialization,
+			TrapLore,
+			Backstab,
+			UseMagicDevice,
+			NimbleFingers,
+			Apothecary,
+			ExoticPoisons,
+			AdvancedStealth,
+			ContractKilling,
+			DispelMagic,
+			ImprovedFamiliar,
+			ArcaneEnchantment,
+			Inscription,
+			Bookworm,
+			ArcaneTransfer,
+			RigorousTraining,
+			Revenant,
+			ImbuePoison,
+			CreateInfusion,
+			NaturesEnchantment,
+			ResistEnergy,
+			AnimalLore,
+			Telepathy,
+			PhysicalResistance,
+			MindBlast,
+			Disarm,
+			Locksmithing,
+			SummonUndead,
+			NecroSpellbook,
+			UndeadBond,
+			AdvancedDying,
+			LeatherDying,
+			FurnitureStaining,
+			ArmorEnameling,
+			Research,
+			WeaponMaster,
+			AxeFighter,
+			RacialCrafting
+		}
+
+		public enum RacialEnemies
+		{
+			None,
+			Animals,
+			Serpents,
+			Spiders,
+			Dragons,
+			Giants,
+			Elementals,
+			Undead,
+			Daemons,
+			Orcs
+		}
+
+		private string m_RacialEnemy = null;
+		private string m_ExtraRacialEnemy = null;
+
+		private RacialEnemies m_RaceEnemy;
+		private RacialEnemies m_ExtraRaceEnemy;
+
+		public RacialEnemies RacialEnemy{ get { return m_RaceEnemy; } set { m_RaceEnemy = value; } }
+		public RacialEnemies ExtraRacialEnemy{ get { return m_ExtraRaceEnemy; } set { m_ExtraRaceEnemy = value; } }
+
+		public enum MasterWeapons
+		{
+			None,
+			Broadsword,
+			Longsword,
+			Cutlass,
+			Scimitar,
+			VikingSword,
+			Bardiche,
+			Halberd,
+			BattleAxe,
+			LargeBattleAxe,
+			ExecutionersAxe,
+			WarAxe,
+			Kryss,
+			Dagger,
+			Spear,
+			ShortSpear,
+			Warfork,
+			Mace,
+			Maul,
+			WarMace,
+			WarHammer,
+			HammerPick,
+			QuarterStaff
+		}
+
+		
+		private MasterWeapons m_MasterWep;
+		
+		public MasterWeapons MasterWeapon{ get { return m_MasterWep; } set { m_MasterWep = value; } }
+		
+		public enum PyromancerSpells
+		{
+			BurningHands		= 0x1,
+			ContinualFlame		= 0x2,
+			FlamingBlade		= 0x4,
+
+			Fireball			= 0x8,
+			SearingLight		= 0x10,
+			FireTrap			= 0x20,
+
+			WallofFire			= 0x40,
+			FlameStrike		= 0x80,
+			Sunbeam			= 0x100,
+
+			FireStorm			= 0x200,
+			Sunburst			= 0x400,
+			MeteorSwarm		= 0x800
+		}
+		#endregion
+
+		#region Variables
+		private MessageType m_SpeechType = MessageType.Regular;
+		private DateTime m_NextFletcherBulkOrder;
+		private DateTime m_NextEXPLoss;
+		private Race m_Race;
+		private Class m_Class;
+		private Alignment m_Alignment;
+		private Feats[] m_Feats = new Feats[10];
+		public Feats[] m_ActiveFeats = new Feats[10];
+		private PotionEffect[] m_PotionEffect = new PotionEffect[10];
+		private WarStone m_WarStone = null;
+		private string m_ApprenticeSkill = "";
+		private ulong m_PlayerSpells = 0;
+		private int m_PyromancerSpells = 0;
+		private bool m_Magic = false;
+		private bool m_GlobeOfDarkness = false;
+		private bool m_DisarmShotReady = false;
+		private bool m_StunShotReady = false;
+		private bool m_PoisonShotReady = false; //using to show wearing drow equipment
+		private bool m_ShadowShotReady = false; //using to show current target of mgspb
+		private bool m_CripplingShotReady = false;
+		private bool m_FatalShotReady = false;  //using to show active called shot
+		private bool m_ChargedMissileReady = false;
+		private bool m_ShowStatus = true;
+		private bool m_CelestialSkill = false;
+		private bool m_BurningHands = false;
+		private int m_OBody = 0;
+		private int m_Level = 1;
+		private int m_Exp = 0;
+		private int m_LanguagesKnown = 1;
+		private int m_CurrentLanguage = 1;
+		private int m_LanguageFont = 3;
+		private int m_LanguageCase = 0;
+		private int m_MaxHits = 0;
+		private int m_MaxStam = 0;
+		private int m_MaxMana = 0;
+		private int m_FeatsRemaining = 0;
+		private int m_WarMountDeaths = 0;
+		private double m_ElvenSkill = 0;
+		private double m_DrowSkill = 0;
+		private double m_LupineSkill = 0;
+		private double m_OrcSkill = 0;
+		private double m_DwarvenSkill = 0;
+		private double m_CommonSkill = 0;
+		private double m_HumanReputation = 0.0;
+		private double m_ElfReputation = 0.0;
+		private double m_OrcReputation = 0.0;
+		private double m_DwarfReputation = 0.0;
+		private double m_DrowReputation = 0.0;
+		private double m_DragonReputation = 0.0;
+		private double m_AnimalReputation = 0.0;
+		private double m_DuergarReputation = 0.0;
+		
+		public const int	LCommon = 0x01;
+		public const int	LElven = 0x02;
+		public const int	LDrow = 0x04;
+		public const int	LOrc = 0x08;
+		public const int	LLupine = 0x10;
+		public const int	LDwarven = 0x20;
+		public const int	LCelestial = 0x40;
+
+		public bool m_CloakOfDarkness = false;
+
+		//Shapeshifting
+		private int m_DruidForm = 0;
+		private DateTime m_ShapeshiftSlotDelete;
+		private DateTime m_ShapeshiftNext;
+		private string[] m_ShapeshiftSlotName = new string[5];
+		private int[] m_ShapeshiftSlot = new int[5];
+		private int[] m_ShapeshiftSlotLevel = new int [5];
+		private int[] m_ShapeshiftSlotHue = new int [5];
+		private int m_ShapeshiftHue;
+		private bool m_ShapeshiftSpecial;
+		private bool m_ShapeshiftTransformed;
+
+		//Perks
+		private int m_perkpoints = 1;
+		private int m_ridingskill = 0;
+		private int m_farmingskill = 0;
+		private int m_teachingskill = 0;
+		private DateTime m_nextteach = DateTime.Now;
+		private DateTime m_nextlearn = DateTime.Now;
+		private int m_farmcrops = 0;
+		private int m_tavteachskill = 999;
+		
+		//Misc
+		#endregion
+
+		#region Properties
+		public override bool ClickTitle{ get { return false; } }
+
+		private DateTime m_NextHeal = DateTime.Now;
+
+		public DateTime NextEXPLoss{ get { return m_NextEXPLoss; } set { m_NextEXPLoss = value; } }
+		public DateTime NextHeal{ get { return m_NextHeal; } set { m_NextHeal = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int OBody { get { return m_OBody; } set { m_OBody = value; this.BodyMod = m_OBody; } }
+
+		public int DruidForm { get { return m_DruidForm; } set { m_DruidForm = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int PerkPoints { get { return m_perkpoints; } set { m_perkpoints = value; } }
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int RidingSkill { get { return m_ridingskill; } set { m_ridingskill = value; } }
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int FarmingSkill { get { return m_farmingskill; } set { m_farmingskill = value; } }
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int TeachingSkill { get { return m_teachingskill; } set { m_teachingskill = value; } }
+		[CommandProperty( AccessLevel.GameMaster )]
+		public DateTime NextTeach { get { return m_nextteach; } set { m_nextteach = value; } }
+		[CommandProperty( AccessLevel.GameMaster )]
+		public DateTime NextLearn { get { return m_nextlearn; } set { m_nextlearn = value; } }
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int FarmCrops { get { return m_farmcrops; } set { m_farmcrops = value; } }
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int TeachSkill { get { return m_tavteachskill; } set { m_tavteachskill = value; } }
+		
+		public PotionEffect[] PotionEffect { get { return m_PotionEffect; } set { m_PotionEffect = value; } }
+		public bool GlobeOfDarkness { get { return m_GlobeOfDarkness; } set { m_GlobeOfDarkness = value; } }
+		public bool ChargedMissileReady { get { return m_FatalShotReady; } set { m_FatalShotReady = value; } }
+		public bool ShowPermaDeathGump = false;
+		public bool BurningHands { get { return m_BurningHands; } set { m_BurningHands = value; } }
+
+		public string ApprenticeSkill{ get { return m_ApprenticeSkill; } set { m_ApprenticeSkill = value; } }
+
+		// Called Shot
+		public bool DisarmShotReady { get { return m_DisarmShotReady; } set { m_DisarmShotReady = value; } }
+		public bool StunShotReady { get { return m_StunShotReady; } set { m_StunShotReady = value; } }
+		public bool PoisonShotReady { get { return m_PoisonShotReady; } set { m_PoisonShotReady = value; } }
+		public bool ShadowShotReady { get { return m_ShadowShotReady; } set { m_ShadowShotReady = value; } }
+		public bool CripplingShotReady { get { return m_CripplingShotReady; } set { m_CripplingShotReady = value; } }
+		public bool FatalShotReady { get { return m_FatalShotReady; } set { m_FatalShotReady = value; } }
+
+		// Languages
+		public int Languages { get { return m_LanguagesKnown; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int CurrentLanguage { get { return m_CurrentLanguage; } set { m_CurrentLanguage = value; } }
+
+		public double ElvenSkill { get { return m_ElvenSkill; } set { m_ElvenSkill = value; } }
+		public double DrowSkill { get { return m_DrowSkill; } set { m_DrowSkill = value; } }
+		public double LupineSkill { get { return m_LupineSkill; } set { m_LupineSkill = value; } }
+		public double OrcSkill { get { return m_OrcSkill; } set { m_OrcSkill = value; } }
+		public double DwarvenSkill { get { return m_DwarvenSkill; } set { m_DwarvenSkill = value; } }
+		public double CommonSkill { get { return m_CommonSkill; } set { m_CommonSkill = value; } }
+		public bool CelestialSkill { get { return m_CelestialSkill; } set { m_CelestialSkill = value; } }
+
+		// Reputation ( scales from 1.0 to -1.0 )
+		public double ElfReputation{ get { return m_ElfReputation; } set { m_ElfReputation = value; } }
+		public double OrcReputation{ get { return m_OrcReputation; } set { m_OrcReputation = value; } }
+		public double DwarfReputation{ get { return m_DwarfReputation; } set { m_DwarfReputation = value; } }
+		public double DrowReputation{ get { return m_DrowReputation; } set { m_DrowReputation = value; } }
+		public double DragonReputation{ get { return m_DragonReputation; } set { m_DragonReputation = value; } }
+		public double DuergarReputation{ get { return m_DuergarReputation; } set { m_DuergarReputation = value; } }
+		public double AnimalReputation{ get { return m_AnimalReputation; } set { m_AnimalReputation = value; } }
+
+
+		//Shapeshifting
+		public DateTime ShapeshiftSlotDelete { get { return m_ShapeshiftSlotDelete; } set { m_ShapeshiftSlotDelete = value; } }
+		public DateTime ShapeshiftNext { get { return m_ShapeshiftNext; } set { m_ShapeshiftNext = value; } }
+		public bool ShapeshiftSpecial { get { return m_ShapeshiftSpecial; } set { m_ShapeshiftSpecial = value; } }
+		public bool Shapeshifted { get { return m_ShapeshiftTransformed; } set { m_ShapeshiftTransformed = value; } }
+		public int ShapeshiftHue { get { return m_ShapeshiftHue; } set { m_ShapeshiftHue = value; } }
+		public int[] ShapeshiftSlot { get { return m_ShapeshiftSlot; } set { m_ShapeshiftSlot = value; } }
+		public int[] ShapeshiftSlotLevel { get { return m_ShapeshiftSlotLevel; } set { m_ShapeshiftSlotLevel = value; } }
+		public int[] ShapeshiftSlotHue { get { return m_ShapeshiftSlotHue; } set { m_ShapeshiftSlotHue = value; } }
+		public string[] ShapeshiftSlotName { get { return m_ShapeshiftSlotName; } set { m_ShapeshiftSlotName = value; } }
+
+		#endregion
+
+		#region Classes, Races, and Alignment
+		// Standard Classes
+		public bool IsFighter() { if ( m_Class == Class.Fighter ) return true; return false; }
+		public bool IsMageSlayer() { if ( m_Class == Class.MageSlayer ) return true; return false; }
+		public bool IsKensai() { if ( m_Class == Class.Kensai ) return true; return false; }
+		public bool IsCleric() { if ( m_Class == Class.Cleric ) return true; return false; }
+		public bool IsDarkCleric() { if ( m_Class == Class.DarkCleric) return true; return false; }
+		public bool IsMage() { if ( IsAeromancer() || IsAquamancer() || IsGeomancer() || IsPyromancer() || IsNecromancer() ) return true; return false; }
+		public bool IsAeromancer() { if ( m_Class == Class.Aeromancer ) return true; return false; }
+		public bool IsAquamancer() { if ( m_Class == Class.Aquamancer ) return true; return false; }
+		public bool IsGeomancer() { if ( m_Class == Class.Geomancer ) return true; return false; }
+		public bool IsPyromancer() { if ( m_Class == Class.Pyromancer ) return true; return false; }
+		public bool IsNecromancer() { if ( m_Class == Class.Necromancer ) return true; return false; }
+		public bool IsPaladin() { if ( m_Class == Class.Paladin ) return true; return false; }
+		public bool IsCavalier() { if ( m_Class == Class.Cavalier ) return true; return false; }
+		public bool IsUndeadHunter() { if ( m_Class == Class.UndeadHunter ) return true; return false; }
+		public bool IsRanger() { if ( m_Class == Class.Ranger ) return true; return false; }
+		public bool IsArcher() { if ( m_Class == Class.Archer ) return true; return false; }
+		public bool IsShapeshifter() { if ( m_Class == Class.Shapeshifter ) return true; return false; }
+		public bool IsForester() { if ( m_Class == Class.Forester ) return true; return false; }
+		public bool IsBerserker() { if ( m_Class == Class.Berserker ) return true; return false; }
+		public bool IsDragoon() { if ( m_Class == Class.Dragoon ) return true; return false; }
+		public bool IsThief() { if ( m_Class == Class.Thief ) return true; return false; }
+		public bool IsAssassin() { if ( m_Class == Class.Assassin ) return true; return false; }
+		public bool IsBlacksmith() { if ( m_Class == Class.Blacksmith ) return true; return false; }
+		public bool IsTailor() { if ( m_Class == Class.Tailor ) return true; return false; }
+		public bool IsWoodworker() { if ( m_Class == Class.Woodworker ) return true; return false; }
+		public bool IsBowyer() { if ( m_Class == Class.Bowyer ) return true; return false; }
+		public bool IsAlchemist() { if ( m_Class == Class.Alchemist ) return true; return false; }
+		public bool IsCook() { if ( m_Class == Class.Cook ) return true; return false; }
+		public bool IsTinker() { if ( m_Class == Class.Tinker ) return true; return false; }
+		public bool IsCrafter() { if ( ( m_Class == Class.Blacksmith ) || ( m_Class == Class.Tailor ) || ( m_Class == Class.Woodworker ) || ( m_Class == Class.Bowyer ) || ( m_Class == Class.Alchemist ) || ( m_Class == Class.Cook ) || ( m_Class == Class.Tinker ) ) return true; return false; }
+
+		// Advanced Classes
+		public bool IsBard() { if ( m_Class == Class.Bard ) return true; return false; }
+		public bool IsBladesinger() { if ( m_Class == Class.Bladesinger ) return true; return false; }
+		public bool IsBloodGuard() { if ( m_Class == Class.BloodGuard ) return true; return false; }
+		public bool IsShaolinMonk() { if ( m_Class == Class.ShaolinMonk ) return true; return false; }
+		public bool IsDrunkenMaster() { if ( m_Class == Class.DrunkenMaster ) return true; return false; }
+		public bool IsPirate() { if ( m_Class == Class.Pirate ) return true; return false; }
+		public bool IsBountyHunter() { if ( m_Class == Class.BountyHunter ) return true; return false; }
+		public bool IsDwarvenDefender() { if ( m_Class == Class.DwarvenDefender ) return true; return false; }
+		public bool IsKnight() { if ( m_Class == Class.Knight ) return true; return false; }
+		public bool IsTemplar() { if ( m_Class == Class.Templar ) return true; return false; }
+		public bool IsSage() { if ( m_Class == Class.Sage ) return true; return false; }
+		public bool IsMarksman() { if ( m_Class == Class.Marksman ) return true; return false; }
+		public bool IsDeathKnight() { if ( m_Class == Class.DeathKnight ) return true; return false; }
+		public bool IsSpiderKnight() { if ( m_Class == Class.SpiderKnight ) return true; return false; }
+
+		// Standard Races
+		public bool IsElf() { if ( this.PlayerRace == Race.Elf ) return true; return false; }
+		public bool IsDrow() { if ( this.PlayerRace == Race.Drow ) return true; return false; }
+		public bool IsOrc() { if ( this.PlayerRace == Race.Orc ) return true; return false; }
+		public bool IsDwarf() { if ( this.PlayerRace == Race.Dwarf ) return true; return false; }
+		public bool IsHuman() { if ( this.PlayerRace == Race.Human ) return true; return false; }
+		public bool IsDuergar() { if ( this.PlayerRace == Race.Duergar ) return true; return false; }
+
+		// Advanced Races
+		public bool IsKresh() { if ( this.PlayerRace == Race.Kresh ) return true; return false; }
+		public bool IsHalfElf() { if ( this.PlayerRace == Race.HalfElf ) return true; return false; }
+		public bool IsUndead() { if ( this.PlayerRace == Race.Undead ) return true; return false; }
+		public bool IsGiant() { if ( this.PlayerRace == Race.Giant ) return true; return false; }
+		public bool IsKender() { if ( this.PlayerRace == Race.Kender ) return true; return false; }
+		public bool IsVampire() { if ( this.PlayerRace == Race.Vampire ) return true; return false; }
+
+		// Alignment
+		public bool IsEvil() { if ( this.PlayerAlignment == Alignment.LawfulEvil || this.PlayerAlignment == Alignment.NeutralEvil || this.PlayerAlignment == Alignment.ChaoticEvil ) return true; return false; }
+		public bool IsGood() { if ( this.PlayerAlignment == Alignment.LawfulGood || this.PlayerAlignment == Alignment.NeutralGood || this.PlayerAlignment == Alignment.ChaoticGood ) return true; return false; }
+		public bool IsNeutral() { if ( this.PlayerAlignment == Alignment.LawfulNeutral || this.PlayerAlignment == Alignment.TrueNeutral || this.PlayerAlignment == Alignment.ChaoticNeutral ) return true; return false; }
+		public bool IsLawfulGood() { if ( this.PlayerAlignment == Alignment.LawfulGood ) return true; return false; }
+		public bool IsNeutralGood() { if ( this.PlayerAlignment == Alignment.NeutralGood ) return true; return false; }
+		public bool IsChaoticGood() { if ( this.PlayerAlignment == Alignment.ChaoticGood ) return true; return false; }
+		public bool IsLawfulNeutral() { if ( this.PlayerAlignment == Alignment.LawfulNeutral ) return true; return false; }
+		public bool IsTrueNeutral() { if ( this.PlayerAlignment == Alignment.TrueNeutral ) return true; return false; }
+		public bool IsChaoticNeutral() { if ( this.PlayerAlignment == Alignment.ChaoticNeutral ) return true; return false; }
+		public bool IsLawfulEvil() { if ( this.PlayerAlignment == Alignment.LawfulEvil ) return true; return false; }
+		public bool IsNeutralEvil() { if ( this.PlayerAlignment == Alignment.NeutralEvil ) return true; return false; }
+		public bool IsChaoticEvil() { if ( this.PlayerAlignment == Alignment.ChaoticEvil ) return true; return false; }
+		#endregion
+
+		#region Feats, Abilities and Misc
+		public Feats[] GetFeats() { return m_Feats; }
+		public void SetFeats( Feats[] tempFeats ) { m_Feats = tempFeats; }
+		public bool HasFeat( Feats hasfeat ) { for ( int i = 0; i < m_Feats.Length; i++ ) { if ( m_Feats[i] == hasfeat ) return true; } return false; }
+		public void AddFeat( Feats feat ) { for ( int i = 0; i < m_Feats.Length; i++ ) { 	if ( m_Feats[i] == Feats.None ) { m_Feats[i] = feat; SendMessage( Teiravon.Messages.AddFeat ); return; } } SendMessage( Teiravon.Messages.AddFeatError ); }
+
+		public bool GetActiveFeats( Feats feat ) { for ( int i = 0; i < m_ActiveFeats.Length; i++ ) { if ( m_ActiveFeats[i] == feat ) return true; } return false; }
+		public void SetActiveFeats( Feats feat, bool toogle )
+		{
+			for ( int i = 0; i < m_ActiveFeats.Length; i++ )
+			{
+				if ( toogle && m_ActiveFeats[i] == Feats.None )
+				{
+					m_ActiveFeats[i] = feat;
+					return;
+				}
+				else if ( !toogle && m_ActiveFeats[i] == feat )
+					m_ActiveFeats[i] = Feats.None;
+			}
+		}
+		#endregion
+
+		public bool GetActivePotions( Server.Items.PotionEffect potion )
+		{
+			for ( int i = 0; i < m_PotionEffect.Length; i++ )
+			{
+				if ( m_PotionEffect[i] == potion )
+					return true;
+			}
+
+			return false;
+		}
+
+		public void SetActivePotions( Server.Items.PotionEffect potion, bool toogle )
+		{
+			for ( int i = 0; i < m_PotionEffect.Length; i++ )
+			{
+				if ( toogle && m_PotionEffect[i] == Server.Items.PotionEffect.None )
+					m_PotionEffect[i] = potion;
+				else if ( !toogle && m_PotionEffect[i] == potion )
+					m_PotionEffect[i] = Server.Items.PotionEffect.None;
+			}
+		}
+
+		public bool CanDrink( Server.Items.PotionEffect potion )
+		{
+			for ( int i = 0; i < m_PotionEffect.Length; i ++ )
+			{
+				if ( m_PotionEffect[i] == potion || m_PotionEffect[m_PotionEffect.Length - 1] != Server.Items.PotionEffect.None )
+					return false;
+			}
+
+			return true;
+		}
+
+		public void SetSpell( ulong m_Spell, bool toggle )
+		{
+			if ( toggle )
+			{
+				m_PlayerSpells |= m_Spell;
+			} else {
+				m_PlayerSpells &= ~m_Spell;
+			}
+		 }
+
+		 public void SetSpell( int m_Spell, bool toggle, Class theclass )
+		 {
+			switch ( theclass )
+			{
+				case Class.Pyromancer:
+					if ( toggle )
+						m_PyromancerSpells |= m_Spell;
+					else
+						m_PyromancerSpells &= ~m_Spell;
+
+					break;
+			}
+		 }
+
+		public bool HasSpell( int m_Spell, Class theclass )
+		{
+			switch ( theclass )
+			{
+				case Class.Pyromancer:
+					return ( ( m_PyromancerSpells & m_Spell ) != 0 );
+			}
+
+			return false;
+		}
+
+		public void SetAllSpells( bool toggle )
+		{
+			if ( toggle )
+			{
+				m_PlayerSpells = 0xfffffffffffffff;
+			} else {
+				m_PlayerSpells = 0;
+			}
+		}
+
+		public bool CanCast( string spell )
+		{
+
+			ulong spells = 0;
+
+			if ( AccessLevel > AccessLevel.Player )
+				return true;
+
+			if ( spell == "Agility" )
+				spells = Teiravon.Spells.AgilitySpell;
+
+			if ( spell == "Air Elemental" )
+				spells = Teiravon.Spells.AirElementalSpell;
+
+			if ( spell == "Arch Cure" )
+				spells = Teiravon.Spells.ArchCureSpell;
+
+			if ( spell == "Arch Protection" )
+				spells = Teiravon.Spells.ArchProtectionSpell;
+
+			if ( spell == "Blade Spirits" )
+				return false;
+
+			if ( spell == "Bless" )
+				spells = Teiravon.Spells.BlessSpell;
+
+			if ( spell == "Chain Lightning" )
+				spells = Teiravon.Spells.ChainLightningSpell;
+
+			if ( spell == "Clumsy" )
+				spells = Teiravon.Spells.ClumsySpell;
+
+			if ( spell == "Create Food" )
+				spells = Teiravon.Spells.CreateFoodSpell;
+
+			if ( spell == "Cunning" )
+				spells = Teiravon.Spells.CunningSpell;
+
+			if ( spell == "Cure" )
+				spells = Teiravon.Spells.CureSpell;
+
+			if ( spell == "Curse" )
+				spells = Teiravon.Spells.CurseSpell;
+
+			if ( spell == "Dispel" )
+				spells = Teiravon.Spells.DispelSpell;
+
+			if ( spell == "Dispel Field" )
+				spells = Teiravon.Spells.DispelFieldSpell;
+
+			if ( spell == "Earth Elemental" )
+				spells = Teiravon.Spells.EarthElementalSpell;
+
+			if ( spell == "Earthquake" )
+				spells = Teiravon.Spells.EarthquakeSpell;
+
+			if ( spell == "Energy Bolt" )
+				spells = Teiravon.Spells.EnergyBoltSpell;
+
+			if ( spell == "Energy Field" )
+				spells = Teiravon.Spells.EnergyFieldSpell;
+
+			if ( spell == "Energy Vortex" )
+				spells = Teiravon.Spells.EnergyVortexSpell;
+
+			if ( spell == "Ethereal" )
+				return true;
+
+			if ( spell == "Explosion" )
+				spells = Teiravon.Spells.ExplosionSpell;
+
+			if ( spell == "Feeblemind" )
+				spells = Teiravon.Spells.FeeblemindSpell;
+
+			if ( spell == "Fireball" )
+				spells = Teiravon.Spells.FireballSpell;
+
+			if ( spell == "Fire Elemental" )
+				spells = Teiravon.Spells.FireElementalSpell;
+
+			if ( spell == "Fire Field" )
+				spells = Teiravon.Spells.FireFieldSpell;
+
+			if ( spell == "Flame Strike" )
+				spells = Teiravon.Spells.FlamestrikeSpell;
+
+			if ( spell == "Gate Travel" )
+				spells = Teiravon.Spells.GateTravelSpell;
+
+			if ( spell == "Greater Heal" )
+				spells = Teiravon.Spells.GreaterHealSpell;
+
+			if ( spell == "Harm" )
+				spells = Teiravon.Spells.HarmSpell;
+
+			if ( spell == "Heal" )
+				spells = Teiravon.Spells.HealSpell;
+
+			if ( spell == "Incognito" )
+				spells = Teiravon.Spells.IncognitoSpell;
+
+			if ( spell == "Invisibility" )
+				spells = Teiravon.Spells.InvisibilitySpell;
+
+			if ( spell == "Lightning" )
+				spells = Teiravon.Spells.LightningSpell;
+
+			if ( spell == "Magic Arrow" )
+				spells = Teiravon.Spells.MagicArrowSpell;
+
+			if ( spell == "Magic Lock" )
+				spells = Teiravon.Spells.MagicLockSpell;
+
+			if ( spell == "Magic Reflection" )
+				spells = Teiravon.Spells.MagicReflectSpell;
+
+			if ( spell == "Magic Trap" )
+				spells = Teiravon.Spells.MagicTrapSpell;
+
+			if ( spell == "Mana Drain" )
+				spells = Teiravon.Spells.ManaDrainSpell;
+
+			if ( spell == "Mana Vampire" )
+				spells = Teiravon.Spells.ManaVampireSpell;
+
+			if ( spell == "Mark" )
+				spells = Teiravon.Spells.MarkSpell;
+
+			if ( spell == "Mass Curse" )
+				spells = Teiravon.Spells.MassCurseSpell;
+
+			if ( spell == "Mass Dispel" )
+				spells = Teiravon.Spells.MassDispelSpell;
+
+			if ( spell == "Meteor Swarm" )
+				spells = Teiravon.Spells.MeteorSwarmSpell;
+
+			if ( spell == "Mind Blast" )
+				spells = Teiravon.Spells.MindBlastSpell;
+
+			if ( spell == "Night Sight" )
+				spells = Teiravon.Spells.NightSightSpell;
+
+			if ( spell == "Paladin" )
+				return false;
+
+			if ( spell == "Paralyze Field" )
+				spells = Teiravon.Spells.ParalyzeFieldSpell;
+
+			if ( spell == "Paralyze" )
+				spells = Teiravon.Spells.ParalyzeSpell;
+
+			if ( spell == "Poison Field" )
+				spells = Teiravon.Spells.PoisonFieldSpell;
+
+			if ( spell == "Poison" )
+				spells = Teiravon.Spells.PoisonSpell;
+
+			if ( spell == "Polymorph" )
+				spells = Teiravon.Spells.PolymorphSpell;
+
+			if ( spell == "Protection" )
+				spells = Teiravon.Spells.ProtectionSpell;
+
+			if ( spell == "Reactive Armor" )
+				spells = Teiravon.Spells.ReactiveArmorSpell;
+
+			if ( spell == "Recall" )
+				spells = Teiravon.Spells.RecallSpell;
+
+			if ( spell == "Remove Trap" )
+				spells = Teiravon.Spells.RemoveTrapSpell;
+
+			if ( spell == "Resurrection" )
+				spells = Teiravon.Spells.ResurrectionSpell;
+
+			if ( spell == "Reveal" )
+				spells = Teiravon.Spells.RevealSpell;
+
+			if ( spell == "Spirit Speak" )
+				return true;
+				//spells = Teiravon.Spells.SpiritSpeakSpell;
+
+			if ( spell == "Strength" )
+				spells = Teiravon.Spells.StrengthSpell;
+
+			if ( spell == "Summon Creature" )
+				spells = Teiravon.Spells.SummonCreatureSpell;
+
+			if ( spell == "Summon Daemon" )
+				spells = Teiravon.Spells.SummonDaemonSpell;
+
+			if ( spell == "Telekinesis" )
+				spells = Teiravon.Spells.TelekinesisSpell;
+
+			if ( spell == "Teleport" )
+				spells = Teiravon.Spells.TeleportSpell;
+
+			if ( spell == "Unlock Spell" )
+				spells = Teiravon.Spells.UnlockSpell;
+
+			if ( spell == "Wall of Stone" )
+				spells = Teiravon.Spells.WallOfStoneSpell;
+
+			if ( spell == "Water Elemental" )
+				spells = Teiravon.Spells.WaterElementalSpell;
+
+			if ( spell == "Weaken" )
+				spells = Teiravon.Spells.WeakenSpell;
+
+			if ( (m_PlayerSpells & spells) != 0 )
+				return true;
+
+			return false;
+		}
+
+		public void SetLanguages( int value, bool toggle )
+		{
+			if ( toggle )
+			{
+				m_LanguagesKnown |= value;
+			} else {
+				m_LanguagesKnown &= ~value;
+			}
+		}
+
+		public void SetLanguages( bool toggle )
+		{
+			if ( toggle )
+			{
+				m_LanguagesKnown |= LDrow|LCommon|LElven|LDwarven|LLupine|LOrc;
+			} else {
+				m_LanguagesKnown = 0x0;
+			}
+		}
+
+		public bool IsShifted()
+		{
+			return ( m_DruidForm > 0 ) ? true : false;
+		}
+
+		private void LearnLanguage( int lang )
+		{
+			switch ( lang )
+			{
+				case LCommon:
+					if ( m_CommonSkill >= 50.0000 )
+					{
+						SendMessage( "You have learned Common!" );
+						SetLanguages( LCommon, true );
+					}
+
+					break;
+
+				case LElven:
+					if ( m_ElvenSkill >= 100.0000 )
+					{
+						SendMessage( "You have learned Elven!" );
+						SetLanguages( LElven, true );
+					}
+
+					break;
+
+				case LDrow:
+					if ( m_DrowSkill >= 100.0000 )
+					{
+						SendMessage( "You have learned Drow!" );
+						SetLanguages( LDrow, true );
+					}
+
+					break;
+
+				case LLupine:
+					if ( m_LupineSkill >= 150.0000 )
+					{
+						SendMessage( "You have learned Lupine!" );
+						SetLanguages( LLupine, true );
+					}
+
+					break;
+
+				case LDwarven:
+					if ( m_DwarvenSkill >= 75.0000 )
+					{
+						SendMessage( "You have learned Dwarven!" );
+						SetLanguages( LDwarven, true );
+					}
+
+					break;
+
+				case LOrc:
+					if ( m_OrcSkill >= 65.0000 )
+					{
+						SendMessage( "You have learned Orc!" );
+						SetLanguages( LOrc, true );
+					}
+
+					break;
+			}
+		}
+
+		public void Dismounted()
+		{
+			string modName = this.Serial.ToString();
+			this.RemoveStatMod( modName + "MntDex" );
+			this.RemoveStatMod( modName + "MntInt" );
+			
+		}
+		
+		public override void OnDoubleClick( Mobile from )
+		{
+			if (from.Mounted)
+			{
+				if (from is TeiravonMobile && this == from)
+				{
+					TeiravonMobile tm = (TeiravonMobile)from;
+					tm.Dismounted();
+				}
+			}
+			
+			base.OnDoubleClick( from );
+
+			SpellHelper.Turn( from, this );
+		}
+
+		public override bool CheckEquip( Item item )
+		{
+
+			//Prevent the usage of scytches, bardiches, pikes and halberds on horses
+			if ( Mounted && ( item is BasePoleArm || item is Pike ) )
+			{
+				SendMessage( "You cannot equip that weapon while mounted." );
+				return false;
+			}
+
+			// General
+			if ( ( item is BaseSpear || item is Lance ) && Mounted && !HasFeat( Feats.MountedCombat ) )
+			{
+				SendMessage( "You must have the Mounted Combat feat to use this weapon on a horse." );
+				return false;
+			}
+
+			if ( item is BaseRanged && Mounted )
+			{
+				bool heavybow = false;
+
+				Type[] m_HeavyBows = new Type[]
+				{
+					typeof( Recurve ),
+					typeof( Crossbow ),
+					typeof( Longbow ),
+					typeof( CompositeBow ),
+					typeof( HeavyCrossbow ),
+					typeof( RepeatingCrossbow )
+				};
+
+				for (int i=0; i < m_HeavyBows.Length; i++ )
+				{
+				 	if ( item.GetType() == m_HeavyBows[i] )
+				 	{
+				 		heavybow = true;
+				 		break;
+				 	}
+				}
+
+				if ( heavybow )
+				{
+					SendMessage( "This bow is too unwieldy to be used while mounted." );
+					return false;
+				}
+			}
+
+			if ( item is Katana && !IsKensai() )
+			{
+				SendMessage( "Only Kensai can use this weapon." );
+				return false;
+			}
+
+
+			// Class specific
+			switch ( m_Class )
+			{
+				// Fighters
+				case Class.Fighter:
+				case Class.Kensai:
+					if ( item is BaseWeapon )
+					{
+						BaseWeapon weapon = (BaseWeapon)item;
+
+						if ( IsKensai() && weapon.Skill != Skills.Swords.SkillName && !(weapon is Dagger) )
+						{
+							SendMessage( "Kensai can only use swords" );
+							return false;
+						}
+
+					} else if ( item is BaseArmor )
+					{
+						BaseArmor armor = (BaseArmor)item;
+
+						if ( IsKensai() && (int)armor.MaterialType != 0 )
+						{
+							SendMessage( "You cannot wear armor!" );
+							return false;
+						}
+					} else if (item is BaseJewel)
+					{
+						if (item is Drowmagering || item is Drowpriestring)
+						{
+							SendMessage("You cannot wear that!");
+							return false;
+						}
+					} else if (item is BaseClothing)
+					{
+						if (item is Drowmagerobe)
+						{
+							SendMessage("You cannot wear that!");
+							return false;
+						}
+					}
+					
+
+					break;
+
+				// Mages
+				case Class.Aeromancer:
+				case Class.Aquamancer:
+				case Class.Geomancer:
+				case Class.Pyromancer:
+				case Class.Necromancer:
+					if ( item is BaseWeapon )
+					{
+						BaseWeapon weapon = (BaseWeapon)item;
+
+						if ( (( weapon.Skill != Skills.Macing.SkillName ) && ( (weapon is Dagger) == false )) && !(weapon is ElvenLongsword) )
+						{
+							SendMessage( "You can only use maces and staves" );
+							return false;
+						}
+					}
+
+					if ( item is BaseArmor )
+					{
+						BaseArmor armor = (BaseArmor)item;
+
+						if ( armor.ArmorAttributes.MageArmor != 1 && armor.MaterialType != ArmorMaterialType.Cloth || armor.MaterialType == ArmorMaterialType.Plate )
+						{
+							SendMessage( "You cannot wear armor" );
+							return false;
+						}
+					}
+					
+					if (item is BaseJewel)
+					{
+						if (item is Drowpriestring || item is Drowwarring)
+						{
+							SendMessage("You cannot wear that!");
+							return false;
+						}
+					}
+
+					break;
+
+				// Clerics
+				case Class.Cleric:
+				case Class.DarkCleric:
+					if ( item is BaseWeapon )
+					{
+						BaseWeapon weapon = (BaseWeapon)item;
+
+						if ( ( weapon.Skill != Skills.Macing.SkillName ) && ( (weapon is Dagger) == false ) )
+						{
+							SendMessage( "You can only use maces and staves" );
+							return false;
+						}
+					}
+
+					if (item is BaseJewel)
+					{
+						if (item is Drowmagering || item is Drowwarring)
+						{
+							SendMessage("You cannot wear that!");
+							return false;
+						}
+					}
+
+					if (item is BaseClothing)
+					{
+						if (item is Drowmagerobe)
+						{
+							SendMessage("You cannot wear that!");
+							return false;
+						}
+					}
+					
+					break;
+
+				// Paladins
+				case Class.Paladin:
+				case Class.UndeadHunter:
+				case Class.Cavalier:
+					break;
+
+				// Rangers
+				case Class.Archer:
+				case Class.Ranger:
+					if ( item is BaseArmor )
+					{
+						BaseArmor armor = (BaseArmor)item;
+
+						if ( armor.MaterialType == ArmorMaterialType.Plate )
+						{
+							SendMessage( "You cannot wear armor greater than chainmail" );
+							return false;
+						}
+					}
+
+					break;
+
+				// Druids
+				case Class.Shapeshifter:
+				case Class.Forester:
+					if ( IsShifted() )
+					{
+						if ( item is ShapeshifterArmor || item is ShapeshifterWeapon || item is CustomShapeshifterArmor || item is CustomShapeshifterWeapon )
+							return true;
+						else
+						{
+							SendMessage( Teiravon.Messages.NoEquip );
+							return false;
+						}
+					}
+
+					if ( item is BaseArmor )
+					{
+						BaseArmor armor = (BaseArmor)item;
+
+						if ( (int)armor.MaterialType > 6 )
+						{
+							SendMessage( "You cannot wear armor greater than leather" );
+							return false;
+						}
+					}
+
+					if ( item is BaseWeapon )
+					{
+						BaseWeapon weapon = (BaseWeapon)item;
+
+						if ( weapon.Skill == Skills.Swords.SkillName && (item is Scimitar ? false : true) )
+						{
+							SendMessage( "The only sword you can use is a scimitar" );
+							return false;
+						}
+					}
+
+					break;
+
+				// Barbarians
+				case Class.Berserker:
+				case Class.Dragoon:
+					if ( item is BaseArmor )
+					{
+						BaseArmor armor = (BaseArmor)item;
+
+						if ( IsBerserker() && ( (int)armor.MaterialType > 6 ) )
+						{
+							SendMessage( "You cannot wear armor greater than leather" );
+							return false;
+						}
+					}
+
+					break;
+
+				// Rogues
+				case Class.Thief:
+				case Class.Assassin:
+				case Class.MageSlayer:
+					if ( item is BaseArmor )
+					{
+						BaseArmor armor = (BaseArmor)item;
+
+						if ( (int)armor.MaterialType > 6 && !IsMageSlayer() )
+						{
+							SendMessage( "You cannot wear armor greater than leather" );
+							return false;
+						}
+					}
+
+					break;
+			}
+
+			return base.CheckEquip( item );
+		}
+
+		#region RunUO Core Speech Ripoff
+		private static ArrayList iHears;
+		private static ArrayList iOnSpeech;
+
+		private void iAddSpeechItemsFrom(ArrayList list, Container cont)
+		{
+			  for (int num1 = 0; num1 < cont.Items.Count; num1++)
+			  {
+					Item item1 = (Item) cont.Items[num1];
+					if (item1.HandlesOnSpeech)
+					{
+						  list.Add(item1);
+					}
+					if (item1 is Container)
+					{
+						  this.iAddSpeechItemsFrom(list, (Container) item1);
+					}
+			  }
+		}
+
+		public override void DoSpeech( string text, int[] keywords, MessageType type, int hue )
+		{
+			SpeechEventArgs args1;
+
+			if (this.Deleted || Commands.Handle(this, text))
+			{
+				return;
+			}
+
+			int num1 = 15;
+
+			if ( ( type == MessageType.Regular || type == MessageType.Yell || type == MessageType.Whisper ) && text.Substring(0, 1) != "[")
+			{
+				// Elven
+				if ( m_CurrentLanguage == LElven )
+					hue = 2596;
+
+				// Drow
+				if ( m_CurrentLanguage == LDrow )
+					hue = 2581;
+
+				// Orc
+				if ( m_CurrentLanguage == LOrc )
+					hue = 2598;
+
+				// Dwarven
+				if ( m_CurrentLanguage == LDwarven )
+					hue = 2939;
+
+				// Lupine
+				if ( m_CurrentLanguage == LLupine )
+					hue = 767;
+			}
+
+			if ( hue == 690 || hue == 549 )
+				hue = 37;
+
+
+			// Hear All
+			foreach( Mobile tm in HearAllEntries )
+			{
+				if ( tm.Map == Map.Internal )
+				{
+					HearAllEntries.Remove( tm );
+					break;
+				}
+
+				if ( tm != this && this.AccessLevel <= tm.AccessLevel )
+				{
+					tm.SendMessage( hue, "*[" + Name + "]: " + text );
+				}
+			}
+
+
+			switch (type)
+			{
+				case MessageType.Regular:
+				{
+					this.SpeechHue = hue;
+					goto Label_006E;
+				}
+				case MessageType.System:
+				{
+					break;
+				}
+				case MessageType.Emote:
+				{
+					this.EmoteHue = hue;
+					goto Label_006E;
+				}
+				case MessageType.Whisper:
+				{
+					this.WhisperHue = hue;
+					num1 = 1;
+					goto Label_006E;
+				}
+				case MessageType.Yell:
+				{
+					this.YellHue = hue;
+					num1 = 0x12;
+					goto Label_006E;
+				}
+			}
+
+			type = MessageType.Regular;
+
+			Label_006E:
+				args1 = new SpeechEventArgs(this, text, type, hue, keywords);
+				EventSink.InvokeSpeech(args1);
+				this.Region.OnSpeech(args1);
+				this.OnSaid(args1);
+
+				if (!args1.Blocked)
+				{
+					text = args1.Speech;
+					if ((text != null) && (text.Length != 0))
+					{
+						  if (iHears == null)
+						  {
+								iHears = new ArrayList();
+						  }
+						  else if (iHears.Count > 0)
+						  {
+								iHears.Clear();
+						  }
+						  if (iOnSpeech == null)
+						  {
+								iOnSpeech = new ArrayList();
+						  }
+						  else if (iOnSpeech.Count > 0)
+						  {
+								iOnSpeech.Clear();
+						  }
+
+						  ArrayList list1 = iHears;
+						  ArrayList list2 = iOnSpeech;
+
+						  if (this.Map != null)
+						  {
+								IPooledEnumerable enumerable1 = this.Map.GetObjectsInRange(this.Location, num1);
+
+								foreach (object obj1 in enumerable1)
+								{
+									  if (obj1 is Mobile)
+									  {
+											Mobile mobile1 = (Mobile) obj1;
+											if (!mobile1.CanSee(this) || ((!Mobile.NoSpeechLOS && mobile1.Player) && !mobile1.InLOS(this)))
+											{
+												  continue;
+											}
+											if (mobile1.NetState != null)
+											{
+												  list1.Add(mobile1);
+											}
+											if (mobile1.HandlesOnSpeech(this))
+											{
+												  list2.Add(mobile1);
+											}
+											for (int num2 = 0; num2 < mobile1.Items.Count; num2++)
+											{
+												  Item item1 = (Item) mobile1.Items[num2];
+												  if (item1.HandlesOnSpeech)
+												  {
+														list2.Add(item1);
+												  }
+												  if (item1 is Container)
+												  {
+														this.iAddSpeechItemsFrom(list2, (Container) item1);
+												  }
+											}
+											continue;
+									  }
+									  if (obj1 is Item)
+									  {
+											if (((Item) obj1).HandlesOnSpeech)
+											{
+												  list2.Add(obj1);
+											}
+											if (obj1 is Container)
+											{
+												  this.iAddSpeechItemsFrom(list2, (Container) obj1);
+											}
+									  }
+								}
+
+								object obj2 = null;
+								string text1 = text;
+								SpeechEventArgs args2 = null;
+								if (this.MutateSpeech(list1, ref text1, ref obj2))
+								{
+									  args2 = new SpeechEventArgs(this, text1, type, hue, new int[0]);
+								}
+
+								this.CheckSpeechManifest();
+								this.ProcessDelta();
+
+								Packet packet1 = null;
+								Packet packet2 = null;
+
+								for (int num3 = 0; num3 < list1.Count; num3++)
+								{
+									  Mobile mobile2 = (Mobile) list1[num3];
+									  if ((args2 == null) || !this.CheckHearsMutatedSpeech(mobile2, obj2) || type == MessageType.Emote )
+									  {
+											mobile2.OnSpeech(args1);
+											NetState state1 = mobile2.NetState;
+
+											if (state1 != null)
+											{
+												  if (packet1 == null)
+												  {
+														packet1 = new UnicodeMessage(this.Serial, (int) this.Body, type, hue, 3, "ENU", this.Name, text);
+												  }
+												  state1.Send(packet1);
+											}
+									  }
+									  else
+									  {
+											mobile2.OnSpeech(args2);
+											NetState state2 = mobile2.NetState;
+
+											if (state2 != null)
+											{
+												  if (packet2 == null)
+												  {
+														packet2 = new AsciiMessage(this.Serial, (int) this.Body, type, hue, m_LanguageFont, this.Name, text1);
+												  }
+												  state2.Send(packet2);
+											}
+									  }
+								}
+								/*if (list2.Count > 1)
+								{
+									  list2.Sort(new Mobile.LocationComparer(this));
+								}*/
+								for (int num4 = 0; num4 < list2.Count; num4++)
+								{
+									  object obj3 = list2[num4];
+									  if (obj3 is Mobile)
+									  {
+											Mobile mobile3 = (Mobile) obj3;
+											if ((args2 == null) || !this.CheckHearsMutatedSpeech(mobile3, obj2))
+											{
+												  mobile3.OnSpeech(args1);
+											}
+											else
+											{
+												  mobile3.OnSpeech(args2);
+											}
+									  }
+									  else
+									  {
+											Item item2 = (Item) obj3;
+											item2.OnSpeech(args1);
+									  }
+								}
+						  }
+					}
+			  }
+		}
+		#endregion
+
+		public override bool CheckHearsMutatedSpeech( Mobile m, object context )
+		{
+			if ( !Player )
+				return false;
+
+			if ( !m.Player )
+				return false;
+
+			if ( m_SpeechType != MessageType.Regular && m_SpeechType != MessageType.Yell && m_SpeechType != MessageType.Whisper )
+				return false;
+
+			if ( m == this )
+				return false;
+
+			if ( !Alive && m.AccessLevel == AccessLevel.Player )
+				return true;
+
+			TeiravonMobile m_Player = (TeiravonMobile)m;
+			
+			//Skill check for understanding
+			if (m_CurrentLanguage == LElven)
+			{
+				if (m_Player.ElvenSkill * 100 > Utility.RandomMinMax(1,10000))
+				{
+					m_Player.ElvenSkill += 0.005;
+					return false;
+				}
+			}
+			if (m_CurrentLanguage == LDrow)
+			{
+				if (m_Player.DrowSkill * 100 > Utility.RandomMinMax(1,10000))
+				{
+					m_Player.DrowSkill += 0.005;
+					return false;
+				}
+			}
+			if (m_CurrentLanguage == LDwarven)
+			{
+				if (m_Player.DwarvenSkill * 100 > Utility.RandomMinMax(1,7000))
+				{
+					m_Player.DwarvenSkill += 0.005;
+					return false;
+				}
+			}
+			if (m_CurrentLanguage == LOrc)
+			{
+				if (m_Player.OrcSkill * 100 > Utility.RandomMinMax(1,6500))
+				{
+					m_Player.OrcSkill += 0.005;
+					return false;
+				}
+			}
+			if (m_CurrentLanguage == LLupine)
+			{
+				if (m_Player.LupineSkill * 100 > Utility.RandomMinMax(1,15000))
+				{
+					m_Player.LupineSkill += 0.005;
+					return false;
+				}
+			}
+
+			// Common
+			if ( m_CurrentLanguage == LCommon )
+				if ( (m_Player.m_LanguagesKnown & LCommon) != 0 )
+					return false;
+				else
+				{
+					m_Player.CommonSkill += 0.001;
+					m_Player.LearnLanguage( LCommon );
+					m_LanguageFont = 3;
+				}
+
+			// Elven
+			if ( m_CurrentLanguage == LElven )
+				if ( (m_Player.m_LanguagesKnown & LElven) != 0 )
+					return false;
+				else
+				{
+					m_Player.ElvenSkill += 0.001;
+					m_Player.LearnLanguage( LElven );
+					m_LanguageFont = 8;
+				}
+
+			// Drow
+			if ( m_CurrentLanguage == LDrow )
+				if ( (m_Player.m_LanguagesKnown & LDrow) != 0 )
+					return false;
+				else
+				{
+					m_Player.DrowSkill += 0.001;
+					m_Player.LearnLanguage( LDrow );
+					m_LanguageFont = 8;
+				}
+
+			// Orc
+			if ( m_CurrentLanguage == LOrc )
+				if ( (m_Player.m_LanguagesKnown & LOrc) != 0 )
+					return false;
+				else
+				{
+					m_Player.OrcSkill += 0.001;
+					m_Player.LearnLanguage( LOrc );
+					m_LanguageFont = 8;
+				}
+
+			// Dwarven
+			if ( m_CurrentLanguage == LDwarven )
+				if ( (m_Player.m_LanguagesKnown & LDwarven) != 0 )
+					return false;
+				else
+				{
+					m_Player.DwarvenSkill += 0.001;
+					m_Player.LearnLanguage( LDwarven );
+					m_LanguageFont = 8;
+				}
+
+			// Lupine
+			if ( m_CurrentLanguage == LLupine )
+				if ( (m_Player.m_LanguagesKnown & LLupine) != 0 )
+					return false;
+				else
+				{
+					m_Player.LupineSkill += 0.001;
+					m_Player.LearnLanguage( LLupine );
+					m_LanguageFont = 8;
+				}
+
+			// Common
+			if ( m_CurrentLanguage == LCelestial )
+				if ( m_Player.LanguageCelestialSkill )
+					return false;
+
+			return true;
+		}
+
+
+		public override bool MutateSpeech( ArrayList hears, ref string text, ref object context )
+		{
+			string m_Text = text;
+			string m_Scrambled = "";
+
+			if ( Alive )
+			{
+				for ( int i = 0; i < m_Text.Length; i++ )
+				{
+					if ( m_Text.Substring(i, 1) != " " )
+					{
+						if ( m_CurrentLanguage == LElven || m_CurrentLanguage == LDrow )
+							m_LanguageCase = 0;
+						else if ( m_CurrentLanguage == LOrc )
+							m_LanguageCase = 2;
+						else if ( m_CurrentLanguage == LLupine )
+							m_LanguageCase = 3;
+						else
+							m_LanguageCase = 1;
+
+						if ( m_LanguageCase == 1 )
+							m_Scrambled += Microsoft.VisualBasic.Strings.Chr(Utility.RandomMinMax( 65, 90 ));
+						else if ( m_LanguageCase == 2 )
+							m_Scrambled += Microsoft.VisualBasic.Strings.Chr(Utility.RandomMinMax( 48, 57 ));
+						else if ( m_LanguageCase == 3 )
+							m_Scrambled += Microsoft.VisualBasic.Strings.Chr(Utility.RandomMinMax( 33, 42 ));
+						else
+							m_Scrambled += Microsoft.VisualBasic.Strings.Chr(Utility.RandomMinMax( 97, 122 ));
+					}
+					else
+						m_Scrambled += " ";
+				}
+			}
+			else {
+/* DO NOT UNCOMMENT		for ( int i = 0; i < m_Text.Length; i++ )
+				{
+					if ( m_Text.Substring(i, 1) != " " )
+					{
+						if ( Utility.RandomMinMax( 1, 3 ) == 3 )
+							m_Scrambled += "o";
+						else
+							m_Scrambled += "O";
+					} else {
+						m_Scrambled += " ";
+					}
+				}
+DO NOT UNCOMMENT */
+				return base.MutateSpeech( hears, ref text, ref context );
+			}
+
+			text = m_Scrambled;
+
+			return true;
+		}
+
+
+		public override bool CanSee( Mobile m )
+		{
+			if ( m is PlayerMobile )
+			{
+				TeiravonMobile m_Player = (TeiravonMobile)m;
+				//Regions.TeiravonRegion r = m.Region as Regions.TeiravonRegion;
+				Region reg = m.Region;
+
+				if ( AccessLevel > AccessLevel.Player && m_Player.AccessLevel > AccessLevel.Player )
+				{
+					if ( m_Player.AccessLevel <= AccessLevel )
+						return true;
+				}
+
+//				if ( ( IsDrow() && Alive ) && ( m_Player.Alive && m_Player.AccessLevel == AccessLevel ) && !m_Player.HasFeat( Feats.AdvancedStealth ) && reg.Name == "Shadowrealm" )
+				if ( ( IsDrow() && Alive ) && ( m_Player.Alive && m_Player.AccessLevel == AccessLevel ) && !m_Player.HasFeat( Feats.AdvancedStealth ))
+					return true;
+			}
+
+			// Hide monsters from dead players to prevent 'ghosting' around dungeons
+			if ( !Alive && m is BaseCreature )
+				return false;
+
+/*
+			if ( m_GlobeOfDarkness && !IsDrow() && AccessLevel == AccessLevel.Player )
+			{
+				foreach ( Mobile blah in GetMobilesInRange( 15 ) )
+					Send( blah.RemovePacket );
+
+				return false;
+			}
+*/
+
+			return base.CanSee( m );
+		}
+
+
+
+		public override void Damage( int amount , Mobile from )
+		{
+
+		//DOUBLE DAMAGE AT NIGHT
+		/*	if ( from is BaseCreature )
+			{
+				BaseCreature m_Creature = from as BaseCreature;
+
+				if ( !m_Creature.Controled )
+				{
+					int hour, min;
+
+					Clock.GetTime( this.Map, this.X, this.Y, out hour, out min );
+
+					TeiravonRegion r = this.Region as TeiravonRegion;
+
+					if ( ( hour > 20 || hour < 5 ) && r != null && !r.Dungeon )
+						amount *= 2;
+				}
+		 	}
+		 */
+
+			if ( IsOrc() && HasFeat( Feats.Tuffness ) && from != null && from != this )
+			{
+				double reduce = ( ( (double)( 100 - Utility.RandomMinMax( 0, 5 ) ) - (double)( PlayerLevel / 1.25 )  ) / (double)100 );
+
+				int temp = amount;
+
+				amount = (int)( (double)amount * (double)reduce );
+
+				if (temp - amount < 1)
+					amount--;
+
+				if (amount < 0)
+					amount = 0;
+
+				if( Utility.RandomMinMax(1,100) > 98 )
+					{
+						amount = 0;
+						SendMessage( "Your tough skin deflects the attack!");
+						from.SendMessage( "{0} deflects the attack!", Name );
+					}
+
+			}
+
+
+
+			base.Damage( amount, from );
+		}
+
+
+		public override void Attack( Mobile from )
+		{
+			if ( HasFeat( Feats.TacticalAssessment ) && from != this )
+			{
+				if ( PlayerLevel < 5 )
+					SendMessage( "You figure they have about {0} hitpoints left...", from.Hits );
+				else if ( PlayerLevel < 10 )
+					SendMessage( "You figure they have about {0} hitpoints and {1} stamina left...", from.Hits, from.Stam );
+				else if ( PlayerLevel < 15 )
+					SendMessage( "You figure they have about {0} hitpoints, {1} stamina, and {2} mana left...", from.Hits, from.Stam, from.Mana );
+				else if ( PlayerLevel >= 15 )
+					SendMessage( "They have {0}/{1} hits, {2}/{3} stamina, and {4}/{5} mana left.", from.Hits, from.HitsMax, from.Stam, from.StamMax, from.Mana, from.ManaMax );
+			}
+
+			base.Attack( from );
+		}
+
+		
+		public override void OnMovement( Mobile m_Player, Point3D oldLocation )
+		{
+			try {
+				if ( Alive )
+				{
+
+					//Get player party
+					Engines.PartySystem.Party p = Engines.PartySystem.Party.Get( (Mobile)this );
+			
+
+					//Determines aura range
+					int auraRange = 2 + (int)(PlayerLevel / 5);
+					if ( auraRange > 6 )
+						auraRange = 6;
+
+					if ( GetActiveFeats( Feats.HolyAura ) || GetActiveFeats( Feats.DivineAura ) )
+					{
+						ArrayList HolyAura = new ArrayList();
+
+						foreach ( Mobile m in GetMobilesInRange( auraRange ) )
+						{
+							if ( m == null )
+								continue;
+
+							if ( m.AccessLevel > AccessLevel )
+								continue;
+
+							if ( p != null && p.Contains( m ) )
+								continue;
+
+							if ( m is BaseCreature && m.Karma <= -300 )
+							{
+								if ( !m.Alive || m == null )
+									continue;
+
+								BaseCreature c = (BaseCreature)m;
+
+								if ( c.Controled || c.Summoned )
+								{
+									if ( c.ControlMaster == this || c.SummonMaster == this )
+										continue;
+
+									if ( p != null && (p.Contains( c.ControlMaster ) || p.Contains( c.SummonMaster )) )
+										continue;;
+								}
+
+								HolyAura.Add( m );
+							}
+							else if ( m is TeiravonMobile )
+							{
+								if ( m == this || !m.Alive || m == null )
+									continue;
+
+								TeiravonMobile m_Target = (TeiravonMobile)m;
+
+								if ( m_Target.IsEvil() || m_Target.Karma <= -3000 )
+									HolyAura.Add( m_Target );
+							}
+						}
+
+						foreach ( Mobile m in HolyAura )
+						{
+							if ( m != null )
+							{
+//								int damage = (int)(PlayerLevel / 5);
+								int damage = 3;
+
+//								if ( Utility.Random( 2 ) == 0 )
+//									Mana -= 1;
+
+								if ( Mana <= 0 )
+								{
+									SetActiveFeats( TeiravonMobile.Feats.HolyAura, false );
+									SendMessage( "You run out of spiritual energy to sustain the holy aura!" );
+									break;
+								}
+								if (Utility.Random( 1000 ) <= ((int)(PlayerLevel/2))*10)
+								{
+									Mana -= 2;
+									if (damage >= 2)
+										m.Damage( Utility.RandomMinMax( damage - 1, damage + 1 ), (Mobile)this );
+									else
+										m.Damage( 1, (Mobile)this );
+								}
+							}
+						}
+					}
+
+
+					if ( GetActiveFeats( Feats.DarkAura ) )
+					{
+
+						ArrayList DarkAura = new ArrayList();
+
+						foreach ( Mobile m in GetMobilesInRange( auraRange ) )
+						{
+							if ( m == null )
+								continue;
+
+							if ( m.AccessLevel > AccessLevel )
+								continue;
+
+							if ( p != null && p.Contains( m ) )
+								continue;
+
+							if ( m is BaseCreature && m.Karma >= -3000 )
+							{
+								if ( !m.Alive || m == null )
+									continue;
+
+								BaseCreature c = (BaseCreature)m;
+
+								if ( c.Controled || c.Summoned )
+								{
+									if ( c.ControlMaster == this || c.SummonMaster == this )
+										continue;
+
+									if ( p != null && (p.Contains( c.ControlMaster ) || p.Contains( c.SummonMaster )) )
+										continue;;
+								}
+
+								DarkAura.Add ( m );
+							}
+							else if ( m is TeiravonMobile )
+							{
+								if ( m == this || !m.Alive || m == null )
+									continue;
+
+								TeiravonMobile m_Target = (TeiravonMobile)m;
+
+								if ( m_Target.IsGood() || m_Target.Karma >= 3000 )
+									DarkAura.Add( m_Target );
+							}
+						}
+
+						foreach ( Mobile m in DarkAura )
+						{
+							if ( m != null )
+							{
+								int damage = 3;
+
+
+								if ( Mana <= 0 )
+								{
+									SetActiveFeats( TeiravonMobile.Feats.DarkAura, false );
+									SendMessage( "You run out of spiritual energy to sustain the dark aura!" );
+									break;
+								}
+
+								if (Utility.Random( 1000 ) <= ((int)(PlayerLevel/2))*10)
+								{
+									Mana -= 2;
+									if (damage >= 2)
+										m.Damage( Utility.RandomMinMax( damage - 1, damage + 1 ), (Mobile)this );
+									else
+										m.Damage( 1, (Mobile)this );
+								}
+							}
+						}
+					}
+				}
+			}
+			catch
+			{
+				m_Player.SendMessage( "Error detected. Please contact a scripter with exactly what you were doing and what was around you at the time you recieve this message." );
+			}
+
+			base.OnMovement( m_Player, oldLocation );
+		}
+
+		public override void OnDeath( Container c )
+		{
+			foreach ( Mobile m in GetMobilesInRange( 15 ) )
+				if ( !m.Player )
+					Send( m.RemovePacket );
+
+			/*TeiravonRegion m_Region = this.Region as TeiravonRegion;
+
+			if ( LastKiller != null && LastKiller is BaseCreature && m_Region != null && !m_Region.NoPD )
+			{
+				BaseCreature m_Killer = (BaseCreature)LastKiller;
+
+				if ( ( m_Killer.Level - m_Level ) >= 10 && Utility.Random( 20 ) == 5 )
+				{
+					SendGump( new PermaDeathGump( this ) );
+					ShowPermaDeathGump = true;
+					CantWalk = true;
+					Squelched = true;
+				}
+				else if ( ( m_Killer.Level - m_Level ) >= 5 && Utility.Random( 30 ) == 5 )
+				{
+					SendGump( new PermaDeathGump( this ) );
+					ShowPermaDeathGump = true;
+					CantWalk = true;
+					Squelched = true;
+				}
+				else if ( m_Killer.Level >= 20 && Utility.Random( 20 ) == 5 )
+				{
+					SendGump( new PermaDeathGump( this ) );
+					ShowPermaDeathGump = true;
+					CantWalk = true;
+					Squelched = true;
+				}
+				else if ( ( m_Killer.Level - m_Level ) >= 5 || m_Killer.Level >= 20 )
+					SendMessage( "You narrowly escape with your existence..." );
+			}*/
+
+			base.OnDeath( c );
+		}
+
+		public override void Resurrect()
+		{
+			base.Resurrect();
+
+			BodyMod = m_OBody;
+
+			if ( IsShifted() )
+				BodyMod = m_DruidForm;
+
+			if ( PoisonShotReady )
+			{
+				if ( SunlightDamage != null )
+				{
+					SunlightDamage.Stop();
+					SunlightDamage = null;
+				}
+
+				SunlightDamage = new SunlightDamageTimer( this, TimeSpan.FromSeconds( 30.0 ) );
+				SunlightDamage.Start();
+			}
+		}
+
+		public override void OnAfterResurrect()
+		{
+			foreach ( Mobile m in GetMobilesInRange( 15 ) )
+				if ( !m.Hidden )
+					Send( new Network.MobileIncoming( this, m ) );
+
+			base.OnAfterResurrect();
+		}
+
+		public override int HitsMax
+		{
+			get
+			{
+				int strBase = 0;
+				int strOffs = GetStatOffset( StatType.Str );
+
+				strBase = this.Str;
+				strOffs += AosAttributes.GetValue( this, AosAttribute.BonusHits );
+
+				return m_MaxHits + strOffs;
+				// OLD --- return strBase + m_MaxHits + strOffs;
+			}
+		}
+
+		public override int StamMax
+		{
+			get
+			{
+				return m_MaxStam + AosAttributes.GetValue( this, AosAttribute.BonusStam );
+				// OLD --- return base.StamMax + m_MaxStam + AosAttributes.GetValue( this, AosAttribute.BonusStam );
+			}
+		}
+
+		public override int ManaMax
+		{
+			get
+			{
+				return m_MaxMana + AosAttributes.GetValue( this, AosAttribute.BonusMana );
+				// OLD --- return base.ManaMax + m_MaxMana + AosAttributes.GetValue( this, AosAttribute.BonusMana );
+			}
+		}
+
+		public override int GetMinResistance( ResistanceType type )
+		{
+			int magicResist = (int)(Skills[SkillName.MagicResist].Value * 10);
+			int min = int.MinValue;
+
+			if ( magicResist >= 1000 )
+				min = 40 + ((magicResist - 1000) / 50);
+			else if ( magicResist >= 400 )
+				min = (magicResist - 400) / 15;
+
+			if ( ( this.IsMage() || this.IsForester() ) && HasFeat( Feats.ElementalResistance ) )
+			{
+				if ( type == ResistanceType.Cold )
+					min += (int)(PlayerLevel / 2) + 5;
+
+				if ( type == ResistanceType.Fire )
+					min += (int)(PlayerLevel / 2) + 5;
+
+				if ( type == ResistanceType.Poison )
+					min += (int)(PlayerLevel / 2) + 5;
+
+				if ( type == ResistanceType.Energy )
+					min += (int)(PlayerLevel / 2) + 5;
+			}
+
+			if ( min > MaxPlayerResistance )
+				min = MaxPlayerResistance;
+
+			int baseMin = base.GetMinResistance( type );
+
+			if ( min < baseMin )
+				min = baseMin;
+
+			return min;
+		}
+
+		public override TimeSpan GetLogoutDelay() { return this.AccessLevel == AccessLevel.Player ? TimeSpan.FromSeconds( 45.0 ) : TimeSpan.FromSeconds( 0 ); }
+
+		new public static void Initialize()
+		{
+			EventSink.Login += new LoginEventHandler( OnLogin );
+			EventSink.Logout += new LogoutEventHandler( OnLogout );
+		}
+
+		private static void OnLogout( LogoutEventArgs e )
+		{
+			if ( TeiravonMobile.HearAllPartyChat.IndexOf( (TeiravonMobile)e.Mobile ) > -1 )
+				TeiravonMobile.HearAllPartyChat.Remove( (TeiravonMobile)e.Mobile );
+		}
+
+		private static void OnLogin( LoginEventArgs e )
+		{
+			Mobile from = e.Mobile;
+			TeiravonMobile m_Player = (TeiravonMobile)from;
+
+			if ( from.AccessLevel >= AccessLevel.Seer )
+			{
+
+				OleDbConnection m_Database = new OleDbConnection( "Provider=Microsoft.Jet.OLEDB.4.0; data source=C:\\Program Files\\RunUO Software Team\\RunUO\\Applications\\Applications.mdb" );
+				OleDbCommand m_SearchString = new OleDbCommand( "SELECT status FROM Applications WHERE status = 0", m_Database );
+
+				try
+				{
+					m_Database.Open();
+
+					OleDbDataReader m_ApplicationList = m_SearchString.ExecuteReader();
+
+					int num = 0;
+
+					while( m_ApplicationList.Read() )
+					{
+						num += 1;
+					}
+
+					if ( num > 0 )
+						from.SendMessage( "There are {0} applications pending.", num );
+
+					m_ApplicationList.Close();
+					m_Database.Close();
+				}
+				catch
+				{
+
+					from.SendMessage( "Error: Unable to open application database. Application file is probably in use." );
+					Console.WriteLine( "CRITICAL ERROR: Unable to open application database on administrator login.");
+
+					if ( m_Database.State == ConnectionState.Open )
+						m_Database.Dispose();
+				}
+			}
+
+			if ( from.AccessLevel >= AccessLevel.GameMaster )
+			{
+				from.SendMessage( Teiravon.Colors.FeatMessageColor, "New commands available: [Expboost <amount>, where amount 500, 5000, 15000, 50000." );
+				from.SendMessage( Teiravon.Colors.FeatMessageColor, "[set OBody <bodyvalue>, allows you to use the bodymod function so that you can still access the paperdoll in the new form." );
+			}
+
+
+			if ( m_Player.ShowPermaDeathGump )
+				m_Player.SendGump( new PermaDeathGump( m_Player ) );
+
+
+			m_Player.CheckResistanceBonus();
+			
+			if (m_Player.Mounted)
+			{
+				int dexb = 0;
+				int intb = 0;
+				string modName = m_Player.Serial.ToString();
+				switch (m_Player.RidingSkill)
+				{
+					case 0:
+						dexb = -25;
+						intb = -25;
+						break;
+					case 1:
+						dexb = -15;
+						intb = -15;
+						break;
+					case 2:
+						dexb = -5;
+						intb = -5;
+						break;
+					case 3:
+						break;
+					case 4:
+						dexb = 10;
+						intb = 5;
+						break;
+				}
+							
+				if ( dexb != 0 )
+					m_Player.AddStatMod( new StatMod( StatType.Dex, modName + "MntDex", dexb, TimeSpan.Zero ) );
+				if ( intb != 0 )
+					m_Player.AddStatMod( new StatMod( StatType.Int, modName + "MntInt", intb, TimeSpan.Zero ) );
+			}
+
+			if ( m_Player.PoisonShotReady )
+			{
+				if ( m_Player.SunlightDamage != null )
+				{
+					m_Player.SunlightDamage.Stop();
+					m_Player.SunlightDamage = null;
+				}
+
+				m_Player.SunlightDamage = new SunlightDamageTimer( m_Player, TimeSpan.FromSeconds( 20.0 ) );
+				m_Player.SunlightDamage.Start();
+			}
+
+
+			/* Character Updates */
+			/* *************** */
+
+			/* Information */
+			/* *************** */
+		}
+
+
+		public Timer SunlightDamage = null;
+
+		private class SunlightDamageTimer : Timer
+		{
+			TeiravonMobile m_Drow;
+			TimeSpan Next;
+
+			public SunlightDamageTimer( TeiravonMobile drow, TimeSpan duration ) : base( duration )
+			{
+				m_Drow = drow;
+				Priority = TimerPriority.FiveSeconds;
+				Next = TimeSpan.FromSeconds( 10.0 );
+			}
+
+			protected override void OnTick()
+			{
+				bool damagearea = false;
+				bool conditions = true;
+				bool alive = m_Drow.Alive;
+
+				Regions.TeiravonRegion r = m_Drow.Region as Regions.TeiravonRegion;
+
+				if ( r != null && !r.Dungeon )
+					damagearea = true;
+
+				if ( m_Drow.AccessLevel > AccessLevel.Player || m_Drow.Map == Map.Internal )
+					conditions = false;
+
+				if ( damagearea && conditions && alive )
+				{
+					int hours, minutes;
+					Clock.GetTime( m_Drow.Map, m_Drow.X, m_Drow.Y, out hours, out minutes );
+					bool morning = false;
+					bool day = false;
+					bool evening = false;
+					int mindmg = 0;
+					int maxdmg = 0;
+
+					if ( hours >= 5 && hours <= 7 )
+					{
+						morning = true;
+						mindmg = 1;
+						maxdmg = 2;
+					}
+					else if ( hours > 7 && hours < 21 )
+					{
+						day = true;
+						mindmg = 2;
+						maxdmg = 6;
+					}
+					else if ( hours >= 21 && hours <= 23 )
+					{
+						evening = true;
+						mindmg = 1;
+						maxdmg = 2;
+					}
+
+
+					if ( morning || day || evening )
+					{
+						Item shroud = m_Drow.FindItemOnLayer( Layer.OuterTorso );
+						bool drowrobe = false;
+
+						if ( shroud is DrowRobe )
+						{
+
+							if ( shroud.ItemID == 0x2683 )
+							{
+								drowrobe = true;
+
+								if ( Utility.Random( 5 ) == 0 )
+									m_Drow.SendMessage( "The shroud of darkness protects you from the rays of the sun." );
+							}
+							else
+							{
+								if ( Utility.Random( 5 ) == 0 )
+									m_Drow.SendMessage( "The robe cannot protect you with the hood pulled down." );
+							}
+
+						}
+
+
+						if ( !drowrobe )
+						{
+							Item item;
+							
+							item = m_Drow.FindItemOnLayer(Layer.FirstValid);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.TwoHanded);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.Shoes);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.Pants);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.Shirt);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.Helm);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.Gloves);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.Ring);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.Neck);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.Waist);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.InnerTorso);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.Bracelet);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.MiddleTorso);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.Earrings);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.Arms);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.Cloak);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.OuterTorso);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.OuterLegs);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+							
+							item = m_Drow.FindItemOnLayer(Layer.OneHanded);
+							if (item is IDrowEquip)
+							{
+								IDrowEquip drowitem = (IDrowEquip)item;
+								drowitem.DrowHits -= Utility.RandomMinMax(mindmg, maxdmg);
+							}
+
+/*							m_Drow.Damage( Utility.RandomMinMax( mindmg, maxdmg ) );
+
+							if ( morning )
+							{
+								if ( Utility.Random( 2 ) == 0 )
+								{
+									if ( shrouded )
+										m_Drow.SendMessage( "The rays from the rising sun slightly burn you under your hood!" );
+
+									else
+										m_Drow.SendMessage( "The rays from the rising sun burn you!" );
+								}
+							}
+							else if ( day )
+							{
+								if ( Utility.Random( 3 ) == 0 )
+								{
+									if ( shrouded )
+										m_Drow.SendMessage( "The scorching sun burns you and your protective shroud!" );
+									else
+										m_Drow.SendMessage( "The scorching sun burns you!" );
+								}
+							}
+							else if ( evening )
+							{
+								if ( Utility.Random( 2 ) == 0 )
+								{
+									if ( shrouded )
+										m_Drow.SendMessage( "The rays from the setting sun slightly burn you under your hood!" );
+									else
+										m_Drow.SendMessage( "The rays from the setting sun burn you!" );
+								}
+							}*/
+						}
+					}
+				}
+
+				if ( m_Drow.Map != Map.Internal && m_Drow.Alive )
+				{
+					m_Drow.SunlightDamage = new SunlightDamageTimer( m_Drow, Next );
+					m_Drow.SunlightDamage.Start();
+				}
+				else
+					m_Drow.SunlightDamage = null;
+			}
+		}
+
+		[Constructable]
+		public TeiravonMobile()
+		{
+			Title = "the Human";
+			Hue = 0x83ea;
+
+			for ( int i = 0; i < m_Feats.Length; i++ )
+			{
+				m_Feats[i] = Feats.None;
+			}
+
+			for ( int i = 0; i < m_ActiveFeats.Length; i++ )
+			{
+				m_ActiveFeats[i] = Feats.None;
+			}
+
+			for ( int i = 0; i < m_PotionEffect.Length; i ++ )
+			{
+				m_PotionEffect[i] = Server.Items.PotionEffect.None;
+			}
+
+			Skills.Focus.Cap = 0.0;
+			Skills.Focus.Base = 0.0;
+		}
+
+
+		public void Shapeshift( bool shift, int body )
+		{
+
+			if ( shift )
+			{
+				BodyMod = body;
+				m_DruidForm = body;
+				CheckResistanceBonus();
+			}
+
+			else
+			{
+				BodyMod = 0;
+				m_DruidForm = 0;
+				CheckResistanceBonus();
+			}
+		}
+
+
+		public ArrayList m_ResistanceMods = new ArrayList();
+
+		public void CheckResistanceBonus()
+		{
+
+			try
+			{
+				for ( int i=0; i < m_ResistanceMods.Count; i++ )
+				{
+
+					if ( m_ResistanceMods[i] == null )
+						continue;
+
+					RemoveResistanceMod( (ResistanceMod)m_ResistanceMods[i] );
+				}
+
+				m_ResistanceMods.Clear();
+
+				if ( HasFeat( Feats.PhysicalResistance ) && IsShifted() )
+				{
+					AddResistBonus( ResistanceType.Physical, PlayerLevel + 10 );
+				}
+				if ( HasFeat( Feats.ResistPoison ) )
+				{
+					AddResistBonus( ResistanceType.Poison, PlayerLevel * 2 + 10 );
+				}
+				if ( HasFeat( Feats.ResistEnergy ) )
+				{
+					AddResistBonus( ResistanceType.Energy, PlayerLevel * 2 + 10 );
+				}
+				if ( HasFeat( Feats.ElementalResistance ) )
+				{
+					AddResistBonus( ResistanceType.Poison, PlayerLevel + 2 );
+					AddResistBonus( ResistanceType.Fire, PlayerLevel + 2 );
+					AddResistBonus( ResistanceType.Cold, PlayerLevel + 2 );
+					AddResistBonus( ResistanceType.Energy, PlayerLevel +2  );
+				}
+				if ( HasFeat( Feats.MountedCombat ) && Mounted )
+				{
+					int resistbonus = 15;
+
+					if ( Mount is WarMount )
+						resistbonus += PlayerLevel + 5;
+
+					AddResistBonus( ResistanceType.Physical, resistbonus );
+				}
+			}
+			catch
+			{
+				SendMessage( "An error occured with the feat resistance bonus script. Please post an exact report of what you were doing in the bug forums." );
+				Console.WriteLine( "ERROR: Error adding feat resistance bonuses." );
+			}
+
+		}
+
+		public void AddResistBonus( ResistanceType type, int amount )
+		{
+			ResistanceMod m_ResistanceBonus;
+			m_ResistanceBonus = new ResistanceMod( type, amount );
+
+			AddResistanceMod( m_ResistanceBonus );
+			m_ResistanceMods.Add( m_ResistanceBonus );
+		}
+
+		public TeiravonMobile( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 7 ); // version
+			writer.Write( m_WarStone );
+			writer.Write( (int) m_Race );
+			writer.Write( (int) m_Class );
+			writer.Write( (int) m_Alignment );
+			writer.Write( (int) m_Exp );
+			writer.Write( (int) m_Level );
+			writer.Write( (int) m_MaxHits );
+			writer.Write( (int) m_MaxStam );
+			writer.Write( (int) m_MaxMana );
+			writer.Write( (int) Hits );
+			writer.Write( (int) Stam );
+			writer.Write( (int) Mana );
+			writer.Write( (string) m_ApprenticeSkill );
+			writer.Write( (bool) m_Magic );
+			writer.Write( (bool) m_ShowStatus );
+			writer.Write( (ulong) m_PlayerSpells );
+			writer.Write( (int) m_LanguagesKnown );
+			writer.Write( (int) m_CurrentLanguage );
+			writer.Write( (double) m_ElvenSkill );
+			writer.Write( (double) m_DrowSkill );
+			writer.Write( (double) m_OrcSkill );
+			writer.Write( (double) m_DwarvenSkill );
+			writer.Write( (double) m_LupineSkill );
+			writer.Write( (double) m_CommonSkill );
+			writer.Write( (bool) m_CelestialSkill );
+			writer.Write( (bool) m_CloakOfDarkness );
+			writer.Write( (double) m_HumanReputation );
+			writer.Write( (double) m_ElfReputation );
+			writer.Write( (double) m_OrcReputation );
+			writer.Write( (double) m_DwarfReputation );
+			writer.Write( (double) m_DrowReputation );
+			writer.Write( (double) m_DragonReputation );
+			writer.Write( (double) m_AnimalReputation );
+			writer.Write( (double) m_DuergarReputation );
+			writer.Write( (int) m_FeatsRemaining );
+			writer.Write( (int) m_Feats.Length );
+			writer.Write( (int) m_ActiveFeats.Length );
+			writer.Write( (int) m_OBody );
+
+			for ( int i = 0; i < m_Feats.Length; i++ )
+			{
+				writer.Write( (int)m_Feats[i] );
+			}
+
+			for ( int i = 0; i < m_ActiveFeats.Length; i++ )
+			{
+				writer.Write( (int) m_ActiveFeats[i] );
+			}
+
+			for ( int i = 0; i < m_PotionEffect.Length; i ++ )
+			{
+				writer.Write( (int) m_PotionEffect[i] );
+			}
+
+			if ( IsShapeshifter() || IsForester() )
+			{
+				int i = 0;
+
+				writer.Write ( (int) m_DruidForm );
+
+				//version 1:
+				writer.Write( (bool)m_ShapeshiftSpecial );
+				writer.Write( (bool)m_ShapeshiftTransformed );
+				writer.Write( (int)m_ShapeshiftHue );
+				writer.WriteDeltaTime( m_ShapeshiftSlotDelete );
+				for ( i = 0; i < m_ShapeshiftSlotName.Length ; i++ ) { writer.Write ( (string) m_ShapeshiftSlotName[i] ); }
+				for ( i = 0; i < m_ShapeshiftSlot.Length ; i++ ) { writer.Write ( (int) m_ShapeshiftSlot[i] ); }
+				for ( i = 0; i < m_ShapeshiftSlotLevel.Length ; i++ ) { writer.Write ( (int) m_ShapeshiftSlotLevel[i] ); }
+				for ( i = 0; i < m_ShapeshiftSlotHue.Length ; i++ ) { writer.Write ( (int) m_ShapeshiftSlotHue[i] ); }
+				//
+			}
+
+			if ( IsArcher() || IsRanger() )
+			{
+				writer.Write ( m_DisarmShotReady );
+				writer.Write ( m_StunShotReady );
+				writer.Write ( m_PoisonShotReady );
+				writer.Write ( m_ShadowShotReady );
+				writer.Write ( m_CripplingShotReady );
+				writer.Write ( m_FatalShotReady );
+				writer.Write( m_ChargedMissileReady );
+
+				//version 1
+				//writer.Write( (string)m_RacialEnemy );
+				//writer.Write( (string)m_ExtraRacialEnemy );
+
+				//version 2
+				writer.Write( (int)m_RaceEnemy );
+				writer.Write( (int)m_ExtraRaceEnemy );
+			}
+
+			if ( IsBowyer()  )
+			{
+				writer.Write ( m_NextFletcherBulkOrder );
+			}
+
+			if ( IsCavalier() )
+			{
+				writer.Write ( m_WarMountDeaths );
+			}
+			
+			if (IsFighter())
+			{
+				writer.Write( (int)m_MasterWep );
+			}
+			
+			//version 4
+			writer.Write( (int)m_perkpoints );
+			writer.Write( (int)m_ridingskill );
+			writer.Write( (int)m_farmingskill );
+			writer.Write( (int)m_teachingskill );
+			writer.Write( m_nextteach );
+			writer.Write( m_nextlearn );
+			writer.Write( m_farmcrops );
+			writer.Write( m_tavteachskill );
+
+		}
+
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+
+			m_WarStone = (WarStone)reader.ReadItem();
+			m_Race = (Race)reader.ReadInt();
+			m_Class = (Class)reader.ReadInt();
+			m_Alignment = (Alignment)reader.ReadInt();
+			m_Exp = reader.ReadInt();
+			m_Level = reader.ReadInt();
+			m_MaxHits = reader.ReadInt();
+			m_MaxStam = reader.ReadInt();
+			m_MaxMana = reader.ReadInt();
+			Hits = reader.ReadInt();
+			Stam = reader.ReadInt();
+			Mana = reader.ReadInt();
+			m_ApprenticeSkill = reader.ReadString();
+			m_Magic = reader.ReadBool();
+			m_ShowStatus = reader.ReadBool();
+			m_PlayerSpells = reader.ReadULong();
+			m_LanguagesKnown = reader.ReadInt();
+			m_CurrentLanguage = reader.ReadInt();
+			m_ElvenSkill = reader.ReadDouble();
+			m_DrowSkill = reader.ReadDouble();
+			m_OrcSkill = reader.ReadDouble();
+			m_DwarvenSkill = reader.ReadDouble();
+			m_LupineSkill = reader.ReadDouble();
+			m_CommonSkill = reader.ReadDouble();
+			m_CelestialSkill = reader.ReadBool();
+			m_CloakOfDarkness = reader.ReadBool();
+			m_HumanReputation = reader.ReadDouble();
+			m_ElfReputation = reader.ReadDouble();
+			m_OrcReputation = reader.ReadDouble();
+			m_DwarfReputation = reader.ReadDouble();
+			m_DrowReputation = reader.ReadDouble();
+			m_DragonReputation = reader.ReadDouble();
+			m_AnimalReputation = reader.ReadDouble();
+			m_DuergarReputation = reader.ReadDouble();
+			m_FeatsRemaining = reader.ReadInt();
+			int temp = reader.ReadInt();
+			int activetemp = reader.ReadInt();
+			m_OBody = reader.ReadInt();
+			BodyMod = m_OBody;
+
+			for ( int i = 0; i < temp; i++ )
+			{
+				m_Feats[i] = (Feats)reader.ReadInt();
+			}
+
+			for ( int i = 0; i < activetemp; i++ )
+			{
+				m_ActiveFeats[i] = (Feats)reader.ReadInt();
+			}
+
+			for ( int i = 0; i < m_PotionEffect.Length; i ++ )
+			{
+				m_PotionEffect[i] = (Server.Items.PotionEffect)reader.ReadInt();
+			}
+
+
+
+			if ( IsShapeshifter() || IsForester() )
+			{
+				int i = 0;
+
+				if ( version >= 1 )
+				{
+
+					m_DruidForm = reader.ReadInt();
+
+					m_ShapeshiftSpecial = reader.ReadBool();
+					m_ShapeshiftTransformed = reader.ReadBool();
+					m_ShapeshiftHue = reader.ReadInt();
+					m_ShapeshiftSlotDelete = reader.ReadDeltaTime();
+					for ( i = 0; i < 5; i++ ) { m_ShapeshiftSlotName[i] = reader.ReadString(); }
+					for ( i = 0; i < 5; i++ ) { m_ShapeshiftSlot[i] = reader.ReadInt(); }
+					for ( i = 0; i < 5; i++ ) { m_ShapeshiftSlotLevel[i] = reader.ReadInt(); }
+					for ( i = 0; i < 5; i++ ) { m_ShapeshiftSlotHue[i] = reader.ReadInt(); }
+
+					if ( IsShifted() && !m_ShapeshiftTransformed )
+						m_DruidForm = 0;
+
+					if ( !IsShifted() && m_ShapeshiftTransformed )
+					{
+						if ( ShapeshiftSpecial )
+							ShapeshiftGump.SpecialShapeshift( false, 1, this );
+						else
+							ShapeshiftGump.ShapeshiftFunctions( false, 1, this );
+					}
+
+					if ( IsShifted() )
+					{
+						BodyMod = m_DruidForm;
+
+					}
+				}
+			}
+
+
+			if ( IsArcher() || IsRanger() )
+			{
+				m_DisarmShotReady = reader.ReadBool();
+				m_StunShotReady = reader.ReadBool();
+				m_PoisonShotReady = reader.ReadBool();
+				m_ShadowShotReady = reader.ReadBool();
+				m_CripplingShotReady = reader.ReadBool();
+				m_FatalShotReady = reader.ReadBool();
+				m_ChargedMissileReady = reader.ReadBool();
+
+
+				if ( version <= 1 )
+				{
+					m_RacialEnemy = reader.ReadString();
+					m_ExtraRacialEnemy = reader.ReadString();
+				}
+
+				if ( version >= 2 )
+				{
+					m_RaceEnemy = (RacialEnemies)reader.ReadInt();
+					m_ExtraRaceEnemy = (RacialEnemies)reader.ReadInt();
+				}
+			}
+
+			if ( IsBowyer() )
+			{
+				m_NextFletcherBulkOrder = reader.ReadDateTime();
+			}
+
+			if ( IsCavalier() )
+			{
+				m_WarMountDeaths = reader.ReadInt();
+			}
+			
+			if (IsFighter())
+			{
+				if ( version >= 3 )
+					m_MasterWep = (MasterWeapons)reader.ReadInt();
+			}
+			
+			if (version < 4)
+			{
+				m_perkpoints = this.PlayerLevel;
+				if (IsCavalier())
+					m_ridingskill = 2;
+				else if (IsRanger() || IsForester() || IsShapeshifter())
+					m_ridingskill = 1;
+				else
+					m_ridingskill = 0;
+				m_farmingskill = 0;
+				m_teachingskill = 0;
+				m_nextteach = DateTime.Now;
+				m_nextlearn = DateTime.Now;
+				
+			}
+			else
+			{
+				m_perkpoints = reader.ReadInt();
+				m_ridingskill = reader.ReadInt();
+				m_farmingskill = reader.ReadInt();
+				m_teachingskill = reader.ReadInt();
+				m_nextteach = reader.ReadDateTime();
+				m_nextlearn = reader.ReadDateTime();
+			}
+			
+			if (version < 6)
+				m_farmcrops = 0;
+			else
+				m_farmcrops = reader.ReadInt();
+			
+			if (version < 7)
+				m_tavteachskill = 999;
+			else
+				m_tavteachskill = reader.ReadInt();
+			
+			CheckResistanceBonus();
+
+			//rw3: Temporary functions for fixing bugs
+
+
+			if ( IsOrc() && OBody != 0 )
+			{
+				OBody = 0;
+				BodyMod = 0;
+			}
+
+			/*
+			if ( IsNecromancer() )
+			{
+				if ( Skills.Stealth.Cap < 100.0 )
+				{
+					Skills.Stealth.Cap = 100.0;
+
+					if ( Skills.Stealth.Base < 30.0 )
+						Skills.Stealth.Base = 30.0;
+
+					Console.WriteLine( "{0}: Stealth skillcap increased", this.Name );
+
+				}
+
+				if ( Skills.Hiding.Cap < 100.0 )
+				{
+					Skills.Hiding.Cap = 100.0;
+
+					if ( Skills.Hiding.Base < 30.0 )
+						Skills.Hiding.Base = 30.0;
+
+					Console.WriteLine( "{0}: Hiding skillcap increased", this.Name );
+				}
+			}
+			*/
+
+			
+			if ( Skills.Bushido.Cap > 0.0 )
+				Skills.Bushido.Cap = 0.0;
+
+			if ( Skills.Ninjitsu.Cap > 0.0 )
+				Skills.Ninjitsu.Cap = 0.0;
+			
+			if (Skills.Musicianship.Cap < 100.0)
+			{
+				Skills.Musicianship.Cap = 100.0;
+				Console.WriteLine("{0}: Music skillcap increased", this.Name );
+			}
+			
+			if (Skills.DetectHidden.Cap < 100.0)
+			{
+				Skills.DetectHidden.Cap = 100.0;
+				if (Skills.DetectHidden.Base == 0)
+					Skills.DetectHidden.Base = 10;
+				Console.WriteLine("{0}: Detect Hidden skillcap increased", this.Name );
+			}
+
+			if (IsNecromancer() && Skills.Poisoning.Cap < 100.0)
+			{
+				Skills.Poisoning.Cap = 100.0;
+				Console.WriteLine("{0}: Poisoining skillcap increased", this.Name );
+			}
+			
+			if (IsDwarf())
+			{
+				if (!(StoneMining))
+				{
+					StoneMining = true;
+					Console.WriteLine("{0}: StoneMining allowed", this.Name );
+				}
+				if (IsBlacksmith())
+				{
+					if (Skills.Blacksmith.Cap < 105.0)
+					{
+						Skills.Blacksmith.Cap = 105.0;
+						Console.WriteLine("{0}: Blacksmith skillcap increased", this.Name );
+					}
+					if (Skills.Mining.Cap < 105.0)
+					{
+						Skills.Mining.Cap = 105.0;
+						Console.WriteLine("{0}: Mining skillcap increased", this.Name );
+					}
+				}
+				else
+				{
+					if (IsTinker() && Skills.Carpentry.Cap < 100.0)
+					{
+						Skills.Carpentry.Cap = 100.0;
+						Console.WriteLine("{0}: Tinkering skillcap increased", this.Name );
+					}
+					if (Skills.Mining.Cap < 105.0)
+					{
+						Skills.Mining.Cap = 105.0;
+						Console.WriteLine("{0}: Mining skillcap increased", this.Name );
+					}
+				}
+			}
+			
+/*			if (IsDrow())
+			{
+				if (Skills.Hiding.Cap == 100.0)
+					Skills.Hiding.Cap = 105.0;
+				else if (Skills.Hiding.Cap < 100.0)
+				{
+					Skills.Hiding.Cap = 90.0;
+					Skills.Hiding.Base += 10.0;
+				}
+				
+				if (Skills.Stealth.Cap == 100.0)
+					Skills.Stealth.Cap = 105.0;
+				else if (Skills.Stealth.Cap < 100.0)
+				{
+					Skills.Stealth.Cap = 80.0;
+					Skills.Stealth.Base += 10.0;
+				}
+			}
+			
+			if (IsOrc())
+			{
+				if (Skills.Macing.Cap == 100.0)
+					Skills.Macing.Cap = 105.0;
+				else if (Skills.Macing.Cap < 100.0)
+				{
+					if (IsDragoon())
+						Skills.Macing.Cap = 105.0;
+					else
+						Skills.Macing.Cap = 90.0;
+				}
+			}
+*/			
+			if ( HasFeat( Feats.GlobeOfDarkness ))
+			{
+				Feats[] feats = GetFeats();
+
+				for ( int i = 0; i < feats.Length; i++ )
+				{
+					if ( feats[i] == Feats.GlobeOfDarkness )
+					{
+						feats[i] = TeiravonMobile.Feats.None;
+						RemainingFeats += 1;
+						Console.WriteLine( "{0}: Globe of Darkness has been removed.", this.Name );
+					}
+				}
+
+				SetFeats( feats );
+			 }
+
+			if ( HasFeat( Feats.ContractKilling ))
+			{
+				Feats[] feats = GetFeats();
+
+				for ( int i = 0; i < feats.Length; i++ )
+				{
+					if ( feats[i] == Feats.ContractKilling )
+					{
+						feats[i] = TeiravonMobile.Feats.None;
+						RemainingFeats += 1;
+						Console.WriteLine( "{0}: Contract Killing has been removed.", this.Name );
+					}
+				}
+
+				SetFeats( feats );
+			 }
+// Fix Language problem			
+			if (version < 5)
+			{
+				if (!IsElf() && this.AccessLevel == AccessLevel.Player)
+				{
+					int tmplang = (int)(LanguageElvenSkill / 30);
+					if (tmplang > 0)
+					{
+						LanguageElvenSkill -= tmplang * 30;
+						PerkPoints += tmplang;
+						LanguageElven = false;
+						Console.WriteLine("Elven skill reduced by {0} for {1}", tmplang, this.Name);
+					}
+				}
+
+				if (!IsDrow() && this.AccessLevel == AccessLevel.Player)
+				{
+					int tmplang = (int)(LanguageDrowSkill / 30);
+					if (tmplang > 0)
+					{
+						LanguageDrowSkill -= tmplang * 30;
+						PerkPoints += tmplang;
+						LanguageDrow = false;
+						Console.WriteLine("Drow skill reduced by {0} for {1}", tmplang, this.Name);
+					}
+				}
+			
+				if (!IsDwarf() && this.AccessLevel == AccessLevel.Player)
+				{
+					int tmplang = (int)(LanguageDwarvenSkill / 30);
+					if (tmplang > 0)
+					{
+						LanguageDwarvenSkill -= tmplang * 30;
+						PerkPoints += tmplang;
+						LanguageDwarven = false;
+						Console.WriteLine("Dwarven skill reduced by {0} for {1}", tmplang, this.Name);
+					}
+				}
+
+				if (!IsOrc() && this.AccessLevel == AccessLevel.Player)
+				{
+					int tmplang = (int)(LanguageOrcSkill / 30);
+					if (tmplang > 0)
+					{
+						LanguageOrcSkill -= tmplang * 30;
+						PerkPoints += tmplang;
+						LanguageOrc = false;
+						Console.WriteLine("Orc skill reduced by {0} for {1}", tmplang, this.Name);
+					}
+				}
+
+				if (this.AccessLevel == AccessLevel.Player)
+				{
+					int tmplang = (int)(LanguageLupineSkill / 30);
+					if (tmplang > 0)
+					{
+						LanguageLupineSkill -= tmplang * 30;
+						PerkPoints += (int)tmplang;
+						LanguageLupine = false;
+						Console.WriteLine("Lupine skill reduced by {0} for {1}", tmplang, this.Name);
+					}
+				}
+	
+			}
+			
+			if (PerkPoints < 0)
+			{
+				Console.WriteLine("{0} has {1} perk points", this.Name, PerkPoints);
+			}
+
+//End Language Fix
+
+/*			try
+			{
+				Console.WriteLine( "Character Info for {0} written to CharInfo.log", this.Name );
+
+				using ( StreamWriter op = new StreamWriter( "CharInfo.log", true ) )
+				{
+					op.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", this.Name, this.PlayerRace, this.PlayerClass, this.PlayerLevel, this.AccessLevel, this.Str, this.Dex, this.Int, this.MaxHits, this.MaxStam, this.MaxMana);
+					
+					for (int i =0; i <= 53; i++)
+						op.Write("{0}\t", this.Skills[i].Base);
+					
+					Feats[] feats = GetFeats();
+					for (int i = 0; i < 5; i++)
+						op.Write("{0}\t", feats[i]);
+					
+					op.WriteLine( "" );
+				}
+			}
+			catch
+			{
+			}
+*/
+
+/*
+			if ( HasFeat( Feats.RacialEnemy ) && version == 1 )
+			{
+				Feats[] feats = GetFeats();
+
+				for ( int i = 0; i < feats.Length; i++ )
+				{
+					if ( feats[i] == Feats.RacialEnemy )
+					{
+						feats[i] = TeiravonMobile.Feats.None;
+						RemainingFeats += 1;
+						Console.WriteLine( "{0}: Racial enemy has been removed.", this.Name );
+					}
+				}
+
+				SetFeats( feats );
+			 }
+
+			if ( HasFeat( Feats.ExtraRacialEnemy ) && version == 1 )
+			{
+				Feats[] feats = GetFeats();
+
+				for ( int i = 0; i < feats.Length; i++ )
+				{
+					if ( feats[i] == Feats.ExtraRacialEnemy )
+					{
+						feats[i] = TeiravonMobile.Feats.None;
+						RemainingFeats += 1;
+						Console.WriteLine( "{0}: Extra Racial enemy has been removed.", this.Name );
+					}
+				}
+
+				SetFeats( feats );
+			 }
+
+
+			if (  IsNecromancer() && ( Skills.SpiritSpeak.Cap < 100.0 ) )
+			{
+				Skills.SpiritSpeak.Cap = 100.0;
+				Console.WriteLine( "{0}: Spirit Speak skillcap increased.", this.Name );
+			}
+
+
+			if ( HasFeat( Feats.ChargedMissile ))
+			{
+				Feats[] feats = GetFeats();
+
+				for ( int i = 0; i < feats.Length; i++ )
+				{
+					if ( feats[i] == Feats.ChargedMissile )
+					{
+						feats[i] = TeiravonMobile.Feats.None;
+						RemainingFeats += 1;
+						Console.WriteLine( "{0}: Charged Missle has been removed.", this.Name );
+					}
+				}
+
+				SetFeats( feats );
+			 }
+
+			if ( HasFeat( Feats.ImprovedFamiliar ))
+			{
+				Feats[] feats = GetFeats();
+
+				for ( int i = 0; i < feats.Length; i++ )
+				{
+					if ( feats[i] == Feats.ImprovedFamiliar )
+					{
+						feats[i] = TeiravonMobile.Feats.None;
+						RemainingFeats += 1;
+						Console.WriteLine( "{0}: Improved Familiar has been removed.", this.Name );
+					}
+				}
+
+				SetFeats( feats );
+			 }
+
+			if ( HasFeat( Feats.FlushCreatures ))
+			{
+				Feats[] feats = GetFeats();
+
+				for ( int i = 0; i < feats.Length; i++ )
+				{
+					if ( feats[i] == Feats.FlushCreatures )
+					{
+						feats[i] = TeiravonMobile.Feats.None;
+						RemainingFeats += 1;
+						Console.WriteLine( "{0}: Flush Creatures has been removed.", this.Name );
+					}
+				}
+
+				SetFeats( feats );
+			 }
+*/
+
+		}
+
+		#region Command Properties
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool ShowStatus
+		{
+			get { return ( m_ShowStatus ); }
+			set { m_ShowStatus = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int WarMountDeaths
+		{
+			get { return m_WarMountDeaths; }
+			set { m_WarMountDeaths = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int RemainingFeats
+		{
+			get { return ( m_FeatsRemaining ); }
+			set { m_FeatsRemaining = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public double LanguageElvenSkill
+		{
+			get { return ( m_ElvenSkill ); }
+			set { m_ElvenSkill = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public double LanguageDrowSkill
+		{
+			get { return ( m_DrowSkill ); }
+			set { m_DrowSkill = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public double LanguageDwarvenSkill
+		{
+			get { return ( m_DwarvenSkill ); }
+			set { m_DwarvenSkill = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public double LanguageOrcSkill
+		{
+			get { return ( m_OrcSkill ); }
+			set { m_OrcSkill = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public double LanguageLupineSkill
+		{
+			get { return ( m_LupineSkill ); }
+			set { m_LupineSkill = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public double LanguageCommonSkill
+		{
+			get { return ( m_CommonSkill ); }
+			set { m_CommonSkill = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool LanguageCelestialSkill
+		{
+			get { return ( m_CelestialSkill ); }
+			set { m_CelestialSkill = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastAgility
+		{
+			get { if ( (m_PlayerSpells & Teiravon.Spells.AgilitySpell) != 0 ) { return true; } return false; }
+			set { SetSpell( Teiravon.Spells.AgilitySpell, value ); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastAirElemental
+		{
+			get { if ( (m_PlayerSpells & Teiravon.Spells.AirElementalSpell) != 0 ) { return true; } return false; }
+			set { SetSpell( Teiravon.Spells.AirElementalSpell, value ); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastArchCure
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.ArchCureSpell ) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.ArchCureSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastArchProtect
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.ArchProtectionSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.ArchProtectionSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastBless
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.BlessSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.BlessSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastChainLight
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.ChainLightningSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.ChainLightningSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastClumsy
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.ClumsySpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.ClumsySpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastCreateFood
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.CreateFoodSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.CreateFoodSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastCunning
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.CunningSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.CunningSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastCure
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.CureSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.CureSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastCurse
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.CurseSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.CurseSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastDispel
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.DispelSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.DispelSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastDispelField
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.DispelFieldSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.DispelFieldSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastEarthElem
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.EarthElementalSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.EarthElementalSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastEarthquake
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.EarthquakeSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.EarthquakeSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastEnergyBolt
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.EnergyBoltSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.EnergyBoltSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastEnergyField
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.EnergyFieldSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.EnergyFieldSpell, value); }
+		}
+
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastEVortex
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.EnergyVortexSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.EnergyVortexSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastExplosion
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.ExplosionSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.ExplosionSpell, value); }
+		}
+
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastFeeblemind
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.FeeblemindSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.FeeblemindSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastFireElem
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.FireElementalSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.FireElementalSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastFireField
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.FireFieldSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.FireFieldSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastFlamestrike
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.FlamestrikeSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.FlamestrikeSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastGateTravel
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.GateTravelSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.GateTravelSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastGreaterHeal
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.GreaterHealSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.GreaterHealSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastHarm
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.HarmSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.HarmSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastHeal
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.HealSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.HealSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastIncognito
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.IncognitoSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.IncognitoSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastInvis
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.InvisibilitySpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.InvisibilitySpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastLightning
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.LightningSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.LightningSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastMagicArrow
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.MagicArrowSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.MagicArrowSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastMagicLock
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.MagicLockSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.MagicLockSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastMagicRef
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.MagicReflectSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.MagicReflectSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastMagicTrap
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.MagicTrapSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.MagicTrapSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastManaDrain
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.ManaDrainSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.ManaDrainSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastManaV
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.ManaVampireSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.ManaVampireSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastMark
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.MarkSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.MarkSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastMassCurse
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.MassCurseSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.MassCurseSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastMassDispel
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.MassDispelSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.MassDispelSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastMeteor
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.MeteorSwarmSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.MeteorSwarmSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastMindBlast
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.MindBlastSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.MindBlastSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastNightSight
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.NightSightSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.NightSightSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastParaField
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.ParalyzeFieldSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.ParalyzeFieldSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastParalyze
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.ParalyzeSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.ParalyzeSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastPoisonField
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.PoisonFieldSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.PoisonFieldSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastPoison
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.PoisonSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.PoisonSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastPolymorph
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.PolymorphSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.PolymorphSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastProtection
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.ProtectionSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.ProtectionSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastRA
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.ReactiveArmorSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.ReactiveArmorSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastRecall
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.RecallSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.RecallSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastRemoveTrap
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.RemoveTrapSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.RemoveTrapSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastResurrect
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.ResurrectionSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.ResurrectionSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastReveal
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.RevealSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.RevealSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastSpiritSpeak
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.SpiritSpeakSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.SpiritSpeakSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastStrength
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.StrengthSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.StrengthSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastCreature
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.SummonCreatureSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.SummonCreatureSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastDaemon
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.SummonDaemonSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.SummonDaemonSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastTelekinesis
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.TelekinesisSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.TelekinesisSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastTeleport
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.TeleportSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.TeleportSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastUnlock
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.UnlockSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.UnlockSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastWallOfStone
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.WallOfStoneSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.WallOfStoneSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastWaterElem
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.WaterElementalSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.WaterElementalSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool zCastWeaken
+		{
+			get { if ( ( m_PlayerSpells & Teiravon.Spells.WeakenSpell) != 0){ return true; } return false; }
+			set { SetSpell( Teiravon.Spells.WeakenSpell, value); }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool Magicable
+		{
+			get { return m_Magic; }
+			set { m_Magic = value; }
+		}
+
+		[CommandProperty( AccessLevel.Administrator )]
+		public int PlayerLevel
+		{
+			get { return m_Level; }
+			set { m_Level = value; CheckResistanceBonus(); }
+		}
+
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int CheckPlayerLevel
+		{
+			get { return m_Level; }
+		}
+
+		[CommandProperty( AccessLevel.Administrator )]
+		public int PlayerExp
+		{
+			get { return m_Exp; }
+			set { m_Exp = value; }
+		}
+
+		[CommandProperty( AccessLevel.Administrator )]
+		public Alignment PlayerAlignment
+		{
+			get { return m_Alignment; }
+			set { m_Alignment = value; }
+		}
+
+		[CommandProperty( AccessLevel.Administrator )]
+		public Race PlayerRace
+		{
+			get { return m_Race; }
+			set { m_Race = value; }
+		}
+
+		[CommandProperty( AccessLevel.Administrator )]
+		public Class PlayerClass
+		{
+			get { return m_Class; }
+			set { m_Class = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public Class CheckPlayerClass
+		{
+			get { return m_Class; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool LanguageLupine
+		{
+			get { return ((m_LanguagesKnown & LLupine) !=0 ); }
+			set
+			{
+				if ( value )
+				{
+					m_LanguagesKnown |= LLupine;
+				} else {
+					m_LanguagesKnown &= ~LLupine;
+				}
+			}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool LanguageDwarven
+		{
+			get { return ((m_LanguagesKnown & LDwarven) !=0 ); }
+			set
+			{
+				if ( value )
+				{
+					m_LanguagesKnown |= LDwarven;
+				} else {
+					m_LanguagesKnown &= ~LDwarven;
+				}
+			}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool LanguageOrc
+		{
+			get { return ((m_LanguagesKnown & LOrc) !=0 ); }
+			set
+			{
+				if ( value )
+				{
+					m_LanguagesKnown |= LOrc;
+				} else {
+					m_LanguagesKnown &= ~LOrc;
+				}
+			}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool LanguageDrow
+		{
+			get { return ((m_LanguagesKnown & LDrow) !=0 ); }
+			set
+			{
+				if ( value )
+				{
+					m_LanguagesKnown |= LDrow;
+				} else {
+					m_LanguagesKnown &= ~LDrow;
+				}
+			}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool LanguageElven
+		{
+			get { return ((m_LanguagesKnown & LElven) !=0 ); }
+			set
+			{
+				if ( value )
+				{
+					m_LanguagesKnown |= LElven;
+				} else {
+					m_LanguagesKnown &= ~LElven;
+				}
+			}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool LanguageCommon
+		{
+			get { return ((m_LanguagesKnown & LCommon) !=0 ); }
+			set
+			{
+				if ( value )
+				{
+					m_LanguagesKnown |= LCommon;
+				} else {
+					m_LanguagesKnown &= ~LCommon;
+				}
+			}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int MaxHits
+		{
+			get { return ( m_MaxHits ); }
+			set { m_MaxHits = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int MaxMana
+		{
+			get { return ( m_MaxMana ); }
+			set { m_MaxMana = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int MaxStam
+		{
+			get { return ( m_MaxStam ); }
+			set { m_MaxStam = value; }
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public TimeSpan NextFletcherBulkOrder
+		{
+			get
+			{
+				TimeSpan ts = m_NextFletcherBulkOrder - DateTime.Now;
+
+				if ( ts < TimeSpan.Zero )
+					ts = TimeSpan.Zero;
+
+				return ts;
+			}
+			set
+			{
+				try{ m_NextFletcherBulkOrder = DateTime.Now + value; }
+				catch{}
+			}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public WarStone Town
+		{
+			get { return m_WarStone; }
+			set { m_WarStone = value; }
+		}
+		#endregion
+
+		private class PermaDeathGump : Gump
+		{
+			private TeiravonMobile m_Player;
+
+			public PermaDeathGump( TeiravonMobile m ) : base( 175, 92 )
+			{
+				m_Player = m;
+
+				Closable = false;
+				Dragable = false;
+				Disposable = false;
+				Resizable = false;
+
+				AddPage( 0 );
+				AddBackground( 70, 80, 280, 245, 3600 );
+				AddBackground( 95, 125, 230, 175, 9350 );
+
+				AddHtml( 125, 100, 600, 20, "<basefont size=\"8\" color=\"#ffffff\">Choose your fate...</basefont>", false, false );
+				AddLabel( 110, 135, 150, "You've suffered a serious blow, and with your last breath of life you:" );
+
+				AddLabel( 160, 170, 150, "Offer a prayer to the gods to save you. ( 100% EXP Loss )" );
+				AddButton( 136, 173, 2224, 2224, 1, GumpButtonType.Reply, 0 );
+
+				AddLabel( 160, 200, 150, "Cease to exist. You may delete and recreate in 21 days." );
+				AddButton( 136, 203, 2224, 2224, 2, GumpButtonType.Reply, 0 );
+			}
+
+			public override void OnResponse( NetState sender, RelayInfo info )
+			{
+				if ( info.ButtonID == 1 )
+				{
+					m_Player.PlayerExp = 0;
+					m_Player.CantWalk = false;
+					m_Player.ShowPermaDeathGump = false;
+					m_Player.Squelched = false;
+
+					m_Player.SendMessage( "The gods answer your plea, and grant you another chance." );
+					m_Player.SendMessage( "Your experience is now zero." );
+					m_Player.SendMessage( "Maybe you shouldn't be attacking NPCs so far above your level." );
+
+					m_Player.Resurrect();
+				}
+				else
+				{
+					m_Player.Name = "Dead Character";
+					m_Player.Map = Map.Internal;
+					m_Player.NetState.Dispose();
+				}
+			}
+		}
+	}
+}

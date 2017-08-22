@@ -1,0 +1,427 @@
+using System;
+using Server.Items;
+using Server.Mobiles;
+using Server.Teiravon;
+
+namespace Server.Engines.Craft
+{
+	public class DefAlchemy : CraftSystem
+	{
+		public override SkillName MainSkill
+		{
+			get	{ return SkillName.Alchemy;	}
+		}
+
+		public override int GumpTitleNumber
+		{
+			get { return 1044001; } // <CENTER>ALCHEMY MENU</CENTER>
+		}
+
+		private static CraftSystem m_CraftSystem;
+
+		public static CraftSystem CraftSystem
+		{
+			get
+			{
+				if ( m_CraftSystem == null )
+					m_CraftSystem = new DefAlchemy();
+
+				return m_CraftSystem;
+			}
+		}
+
+		public override double GetChanceAtMin( CraftItem item )
+		{
+			return 0.0; // 0%
+		}
+
+		public DefAlchemy() : base( 1, 1, 1.25 )// base( 1, 1, 3.1 )
+		{
+		}
+
+		public override int CanCraft( Mobile from, BaseTool tool, Type itemType )
+		{
+			if ( tool.Deleted || tool.UsesRemaining < 0 )
+				return 1044038; // You have worn out your tool!
+			else if ( !BaseTool.CheckAccessible( tool, from ) )
+				return 1044263; // The tool must be on your person to use.
+
+			return 0;
+		}
+
+		public override void PlayCraftEffect( Mobile from )
+		{
+			from.PlaySound( 0x242 );
+		}
+
+		public override int PlayEndingEffect( Mobile from, bool failed, bool lostMaterial, bool toolBroken, int quality, bool makersMark, CraftItem item )
+		{
+			if ( toolBroken )
+				from.SendLocalizedMessage( 1044038 ); // You have worn out your tool
+
+			if ( failed )
+			{
+				from.AddToBackpack( new Bottle() );
+
+				return 500287; // You fail to create a useful potion.
+			}
+			else
+			{
+				from.PlaySound( 0x240 ); // Sound of a filling bottle
+
+				if ( quality == -1 )
+					return 1048136; // You create the potion and pour it into a keg.
+				else
+					return 500279; // You pour the potion into a bottle...
+			}
+		}
+
+		public override void InitCraftList()
+		{
+		}
+
+		public override void CustomSystem( Mobile thePlayer )
+		{
+			int index = -1;
+
+			TeiravonMobile m_Player = (TeiravonMobile)thePlayer;
+
+
+			if ( thePlayer != null && thePlayer.Backpack.FindItemByType( typeof( AlchemyTome ) ) != null && !m_Player.IsAssassin())
+			{
+				AlchemyTome m_Tome = (AlchemyTome)thePlayer.Backpack.FindItemByType( typeof( AlchemyTome ) );
+
+				if ( ( m_Tome.Formulas & 0x1 ) != 0 )
+				{
+					// Refresh
+					index = AddCraft( typeof( RefreshPotion ), 1044530, 1044538, -25, 25.0, typeof( BlackPearl ), 1044353, 1, 1044361 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				
+				}
+
+				if ( ( m_Tome.Formulas & 0x2 ) != 0 )
+				{
+					// Greater Refresh
+					index = AddCraft( typeof( TotalRefreshPotion ), 1044530, 1044539, 25.0, 75.0, typeof( BlackPearl ), 1044353, 5, 1044361 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+				
+				if ( ( m_Tome.Formulas & 0x4 ) != 0 )
+				{
+					// Agility
+					index = AddCraft( typeof( AgilityPotion ), 1044531, 1044540, 15.0, 65.0, typeof( Bloodmoss ), 1044354, 1, 1044362 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x8 ) != 0 )
+				{
+					// Greater Agility
+					index = AddCraft( typeof( GreaterAgilityPotion ), 1044531, 1044541, 35.0, 85.0, typeof( Bloodmoss ), 1044354, 3, 1044362 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x10 ) != 0 )
+				{
+					// Nightsight
+					index = AddCraft( typeof( NightSightPotion ), 1044532, 1044542, -25.0, 25.0, typeof( SpidersSilk ), 1044360, 1, 1044368 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x20 ) != 0 )
+				{
+					// Lesser Heal
+					index = AddCraft( typeof( LesserHealPotion ), 1044533, 1044543, -25.0, 25.0, typeof( Ginseng ), 1044356, 1, 1044364 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x40 ) != 0 )
+				{
+					// Heal
+					index = AddCraft( typeof( HealPotion ), 1044533, 1044544, 15.0, 65.0, typeof( Ginseng ), 1044356, 3, 1044364 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x80 ) != 0 )
+				{
+					// Greater Heal
+					index = AddCraft( typeof( GreaterHealPotion ), 1044533, 1044545, 55.0, 105.0, typeof( Ginseng ), 1044356, 7, 1044364 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x100 ) != 0 )
+				{
+					// Strength
+					index = AddCraft( typeof( StrengthPotion ), 1044534, 1044546, 25.0, 75.0, typeof( MandrakeRoot ), 1044357, 2, 1044365 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x200 ) != 0 )
+				{
+					// Greater Strength
+					index = AddCraft( typeof( GreaterStrengthPotion ), 1044534, 1044547, 45.0, 95.0, typeof( MandrakeRoot ), 1044357, 5, 1044365 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x400 ) != 0 )
+				{
+					// Lesser Poison
+					index = AddCraft( typeof( LesserPoisonPotion ), 1044535, 1044548, -5.0, 45.0, typeof( Nightshade ), 1044358, 1, 1044366 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x800 ) != 0 )
+				{
+					// Poison
+					index = AddCraft( typeof( PoisonPotion ), 1044535, 1044549, 15.0, 65.0, typeof( Nightshade ), 1044358, 2, 1044366 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x1000 ) != 0 )
+				{
+					// Greater Poison
+					index = AddCraft( typeof( GreaterPoisonPotion ), 1044535, 1044550, 55.0, 105.0, typeof( Nightshade ), 1044358, 4, 1044366 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x2000 ) != 0 )
+				{
+					// Deadly Poison
+					index = AddCraft( typeof( DeadlyPoisonPotion ), 1044535, 1044551, 90.0, 140.0, typeof( Nightshade ), 1044358, 8, 1044366 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x4000 ) != 0 )
+				{
+					// Lesser Cure
+					index = AddCraft( typeof( LesserCurePotion ), 1044536, 1044552, -10.0, 40.0, typeof( Garlic ), 1044355, 1, 1044363 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x8000 ) != 0 )
+				{
+					// Cure
+					index = AddCraft( typeof( CurePotion ), 1044536, 1044553, 25.0, 75.0, typeof( Garlic ), 1044355, 3, 1044363 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x10000 ) != 0 )
+				{
+					// Greater Cure
+					index = AddCraft( typeof( GreaterCurePotion ), 1044536, 1044554, 65.0, 115.0, typeof( Garlic ), 1044355, 6, 1044363 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x20000 ) != 0 )
+				{
+					// Lesser Explosion
+					index = AddCraft( typeof( LesserExplosionPotion ), 1044537, 1044555, 5.0, 55.0, typeof( SulfurousAsh ), 1044359, 3, 1044367 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x40000 ) != 0 )
+				{
+					// Explosion
+					index = AddCraft( typeof( ExplosionPotion ), 1044537, 1044556, 35.0, 85.0, typeof( SulfurousAsh ), 1044359, 5, 1044367 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if ( ( m_Tome.Formulas & 0x80000 ) != 0 )
+				{
+					// Greater Explosion
+
+					index = AddCraft( typeof( GreaterExplosionPotion ), 1044537, 1044557, 65.0, 115.0, typeof( SulfurousAsh ), 1044359, 10, 1044367 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				// ************** Teiravon Potions**************
+
+				if ( m_Player.IsAlchemist() )
+				{
+					if ( ( m_Tome.Formulas & 0x100000 ) != 0 )
+					{
+						index = AddCraft( typeof( ChameleonPotion ), "Lost Lore", "Chameleon Potion", 90.0, 100.0, typeof( Bottle ), "Bottle", 1 );
+						AddRes( index, typeof( BatWing ), "Bat Wing", 3 );
+						AddRes( index, typeof( WyrmHeart ), "Wyrm Heart", 3 );
+					}
+
+					if ( ( m_Tome.Formulas & 0x200000 ) != 0 )
+					{
+						index = AddCraft( typeof( LesserFloatPotion ), "Lost Lore", "Lesser Float Potion", 75.0, 100.0, typeof( Bottle ), "Bottle", 1 );
+						AddRes( index, typeof( Pumice ), "Pumice", 1 );
+						AddRes( index, typeof( EyeOfNewt ), "Eye of Newt", 1 );
+					}
+
+					if ( ( m_Tome.Formulas & 0x400000 ) != 0 )
+					{
+						index = AddCraft( typeof( FloatPotion ), "Lost Lore", "Float Potion", 85.0, 100.0, typeof( Bottle ), "Bottle", 1 );
+						AddRes( index, typeof( Pumice ), "Pumice", 3 );
+						AddRes( index, typeof( EyeOfNewt ), "Eye of Newt", 3 );
+					}
+
+					if ( ( m_Tome.Formulas & 0x800000 ) != 0 )
+					{
+						index = AddCraft( typeof( GreaterFloatPotion ), "Lost Lore", "Greater Float Potion", 95.0, 115.0, typeof( Bottle ), "Bottle", 1 );
+						AddRes( index, typeof( Pumice ), "Pumice", 5 );
+						AddRes( index, typeof( EyeOfNewt ), "Eye of Newt", 5 );
+					}
+
+					if ( ( m_Tome.Formulas & 0x1000000 ) != 0 )
+					{
+						index = AddCraft( typeof( SustenancePotion ), "Lost Lore", "Sustenance Potion", 75.0, 100.0, typeof( Bottle ), "Bottle", 1 );
+						AddRes( index, typeof( Garlic ), "Garlic", 1 );
+						AddRes( index, typeof( BatWing ), "Bat Wing", 1 );
+					}
+
+					if ( ( m_Tome.Formulas & 0x2000000 ) != 0 )
+					{
+						index = AddCraft( typeof( GreaterSustenancePotion ), "Lost Lore", "Greater Sustenance Potion", 85.0, 100.0, typeof( Bottle ), "Bottle", 1 );
+						AddRes( index, typeof( Garlic ), "Garlic", 3 );
+						AddRes( index, typeof( BatWing ), "Bat Wing", 3 );
+					}
+
+					if ( ( m_Tome.Formulas & 0x4000000 ) != 0 )
+					{
+						index = AddCraft( typeof( GenderSwapPotion ), "Lost Lore", "Gender Swap Potion", 75.0, 100.0, typeof( Bottle ), "Bottle", 1 );
+						AddRes( index, typeof( DragonBlood ), "Dragon's Blood", 1 );
+						AddRes( index, typeof( WhiteScales ), "White Scales", 2 );
+						AddRes( index, typeof( BatWing ), "Bat Wing", 2 );
+					}
+
+					if ( ( m_Tome.Formulas & 0x8000000 ) != 0 )
+					{
+						index = AddCraft( typeof( InvisibilityPotion ), "Lost Lore", "Invisibility Potion", 80.0, 100.0, typeof( Bottle ), "Bottle", 1 );
+						AddRes( index, typeof( WyrmHeart ), "Wyrm Heart", 4 );
+					}
+
+					if ( ( m_Tome.Formulas & 0x10000000 ) != 0 )
+					{
+						index = AddCraft( typeof( ManaRefreshPotion ), "Lost Lore", "Mana Refresh Potion", 90.0, 100.0, typeof( Bottle ), "Bottle", 1 );
+						AddRes( index, typeof( EyeOfNewt ), "Eye of Newt", 4 );
+					}
+
+					if ( ( m_Tome.Formulas & 0x20000000 ) != 0 )
+					{
+						index = AddCraft( typeof( TotalManaRefreshPotion ), "Lost Lore", "Total Mana Refresh Potion", 95.0, 120.0, typeof( Bottle ), "Bottle", 1 );
+						AddRes( index, typeof( EyeOfNewt ), "Eye of Newt", 6 );
+					}
+
+					if ( ( m_Tome.Formulas & 0x40000000 ) != 0 )
+					{
+						index = AddCraft( typeof( MagicResistPotion ), "Lost Lore", "Magic Resist Potion", 95.0, 110.0, typeof( Bottle ), "Bottle", 1 );
+						AddRes( index, typeof( MandrakeRoot ), "Mandrake Root", 3 );
+						AddRes( index, typeof( SpidersSilk ), "Spiders Silk", 3 );
+						AddRes( index, typeof( RedScales ), "Red Scales", 3 );
+						AddRes( index, typeof( Garlic ), "Garlic", 3 );
+					}
+
+					if ( ( m_Tome.Formulas & 0x80000000 ) != 0 )
+					{
+						index = AddCraft( typeof( InvulnerabilityPotion ), "Lost Lore", "Invulnerability Potion", 99.0, 120.0, typeof( Bottle ), "Bottle", 1 );
+						AddRes( index, typeof( Ginseng ), "Ginseng", 3 );
+						AddRes( index, typeof( ValoriteOre ), "Valorite Ore", 3 );
+						AddRes( index, typeof( BlackScales ), "Black Scales", 5 );
+						AddRes( index, typeof( Garlic ), "Garlic", 3 );
+					}
+				}
+			}
+
+			if (m_Player.IsAssassin() && m_Player.HasFeat(TeiravonMobile.Feats.ExoticPoisons))
+			{
+				if (m_Player.PlayerLevel >= 5)
+				{
+					index = AddCraft( typeof( LesserPoisonPotion ), 1044535, 1044548, -5.0, 45.0, typeof( Nightshade ), 1044358, 1, 1044366 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if (m_Player.PlayerLevel >= 9)
+				{
+					index = AddCraft( typeof( PoisonPotion ), 1044535, 1044549, 0.0, 0.0, typeof( Nightshade ), 1044358, 2, 1044366 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+				
+				if (m_Player.PlayerLevel >= 13)
+				{
+					index = AddCraft( typeof( GreaterPoisonPotion ), 1044535, 1044550, 0.0, 0.0, typeof( Nightshade ), 1044358, 4, 1044366 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if (m_Player.PlayerLevel >= 17)
+				{
+					index = AddCraft( typeof( DeadlyPoisonPotion ), 1044535, 1044551, 0.0, 0.0, typeof( Nightshade ), 1044358, 8, 1044366 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if (m_Player.PlayerLevel >= 7)
+				{
+					index = AddCraft( typeof( LesserCurePotion ), 1044536, 1044552, 0.0, 0.0, typeof( Garlic ), 1044355, 1, 1044363 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+
+				if (m_Player.PlayerLevel >= 11)
+				{
+					index = AddCraft( typeof( CurePotion ), 1044536, 1044553, 0.0, 0.0, typeof( Garlic ), 1044355, 3, 1044363 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}	
+
+					if (m_Player.PlayerLevel >= 15)
+				{
+					index = AddCraft( typeof( GreaterCurePotion ), 1044536, 1044554, 0.0, 0.0, typeof( Garlic ), 1044355, 6, 1044363 );
+					AddRes( index, typeof ( Bottle ), 1044529, 1, 500315 );
+				}
+				
+			}
+			
+			if (m_Player.HasFeat( TeiravonMobile.Feats.RacialCrafting ) && m_Player.IsTinker())
+			{
+				if (m_Player.IsHuman())
+				{
+					index = AddCraft( typeof( HumanEnhancePotion ), "Racials", "Potion Enhancer", 95.0, 130.0, typeof( Bottle ), "Bottle", 1 );
+					AddRes( index, typeof( BlackPearl ), "Black Pearl", 2 );
+					AddRes( index, typeof( GoldOre ), "Gold Ore", 3 );
+					AddRes( index, typeof( RedScales ), "Red Scales", 1 );
+					AddRes( index, typeof( Garlic ), "Garlic", 3 );
+					index = AddCraft( typeof( HumanPetHealPotion ), "Racials", "Potion Enhancer", 90.0, 130.0, typeof( Bottle ), "Bottle", 1 );
+					AddRes( index, typeof( Ginseng ), "Ginseng", 3 );
+					AddRes( index, typeof( Mandrake ), "Mandrake", 3 );
+					AddRes( index, typeof( Garlic ), "Garlic", 3 );
+				}
+				else if (m_Player.IsOrc())
+				{
+					index = AddCraft( typeof( OrcGrowthPotion ), "Racials", "Potion of Growth", 95.0, 130.0, typeof( Bottle ), "Bottle", 1 );
+					AddRes( index, typeof( BlackPearl ), "Black Pearl", 2 );
+					AddRes( index, typeof( CopperOre ), "Copper Ore", 1 );
+					AddRes( index, typeof( BlackScales ), "Black Scales", 1 );
+					AddRes( index, typeof( SulfurousAsh ), "Sulfurous Ash", 2 );
+				}
+				else if (m_Player.IsDrow())
+				{
+					index = AddCraft( typeof( DrowWebPotion ), "Racials", "Essence of Spider Web", 95.0, 130.0, typeof( Bottle ), "Bottle", 1 );
+					AddRes( index, typeof( SpidersSilk ), "Spider Silk", 10 );
+					AddRes( index, typeof( Bone ), "Bone", 3 );
+					index = AddCraft( typeof( DrowPoisonImmunityPotion ), "Racials", "Potion of Poison Immunity", 95.0, 130.0, typeof( Bottle ), "Bottle", 1 );
+					AddRes( index, typeof( PoisonPotion ), "Poison Potion", 1 );
+					AddRes( index, typeof( Ginseng ), "Ginseng", 6 );
+				}
+				else if (m_Player.IsDwarf())
+				{
+					index = AddCraft( typeof( DwarvenRagePotion ), "Racials", "Potion of Dwarven Rage", 95.0, 130.0, typeof( Bottle ), "Bottle", 1 );
+					AddRes( index, typeof( StrengthPotion ), "Strength Potion", 1 );
+					AddRes( index, typeof( DwarvenAle ), "Troll Liver Ale", 1 );
+					index = AddCraft( typeof( DwarvenOrePotion ), "Racials", "Ore Refinement Potion", 95.0, 130.0, typeof( Bottle ), "Bottle", 1 );
+					AddRes( index, typeof( LesserPoisonPotion ), "Lesser Poison Potion", 1 );
+					AddRes( index, typeof( SulfurousAsh ), "Sulfurous Ash", 8 );
+				}
+				else if (m_Player.IsElf())
+				{
+					index = AddCraft( typeof( ElvenHealPotion ), "Racials", "Elixer of Life", 95.0, 130.0, typeof( Bottle ), "Bottle", 1 );
+					AddRes( index, typeof( GreaterHealPotion ), "Greater Heal Potion", 1 );
+					AddRes( index, typeof( Lilypad ), "Lilly Pads", 3 );
+					index = AddCraft( typeof( ElvenPlantPotion ), "Racials", "Potion of Dwarven Rage", 95.0, 130.0, typeof( Bottle ), "Bottle", 1 );
+					AddRes( index, typeof( StrengthPotion ), "Strength Potion", 1 );
+					AddRes( index, typeof( KnotGrass ), "Knot Grass", 3 );
+				}
+			}
+			
+		}
+	}
+}

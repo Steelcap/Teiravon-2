@@ -1,0 +1,662 @@
+using System;
+using Server;
+using Server.Gumps;
+using Server.Mobiles;
+using Server.Items;
+using Server.Targeting;
+
+namespace Server.Gumps
+{
+	public class NecroSummonGump : Gump
+	{
+		TeiravonMobile m_Player;
+
+		public NecroSummonGump( Mobile from ) : base( 0, 0 )
+		{
+
+			m_Player = (TeiravonMobile)from;
+
+			Closable = true;
+			Disposable = true;
+			Dragable = true;
+			Resizable = false;
+
+			AddPage(0);
+
+			//background
+			AddImageTiled(64, 54, 641, 431, 1416);
+
+			//up, down
+			AddImageTiled(65, 44, 640, 12, 9271);
+			AddImageTiled(65, 484, 640, 8, 9277);
+
+			//left, right
+			AddImageTiled(55, 54, 12, 430, 9273);
+			AddImageTiled(705, 54, 9, 430, 9275);
+
+			//corner left, right upper
+			AddImage(55, 44, 9270);
+			AddImage(705, 44, 9272);
+
+			//corner left, right downer
+			AddImage(55, 483, 9276);
+			AddImage(704, 483, 9278);
+
+			//decorations
+			AddImage(9, 57, 10440);
+			AddImage(680, 57, 10441);
+			AddImage(577, 241, 50930);
+			AddImageTiled(577, 259, 60, 102, 50930);
+			AddImage(375, 468, 113);
+
+			//menu title
+			AddLabel(326, 68, 2930, @"SUMMON  UNDEAD");
+
+			AddLabel(92, 110, 2930, @"Lesser Undead");
+			AddLabel(307, 111, 2930, @"Greater Undead");
+			AddLabel(509, 111, 2930, @"Servant of Bones");
+
+			AddButton( 90, 440, 4005, 4007, (int)Buttons.RemoveSummon, GumpButtonType.Reply, 0);
+			AddLabel( 130, 440, 2930, @"Dismiss Undead");
+
+			int slotlevel = (int)(m_Player.PlayerLevel / 3) + 1;
+
+			if (slotlevel > 7 )
+				slotlevel = 7;
+
+			switch ( slotlevel )
+			{
+
+				case 1:
+					SummonButton( 0, 0, (int)Buttons.LSkeleton, "Lesser Skeleton", 9660 );
+					break;
+
+				case 2:
+					SummonButton( 0, 1, (int)Buttons.GSkeleton, "Greater Skeleton", 9661 );
+					goto case 1;
+
+				case 3:
+					SummonButton( 0, 2, (int)Buttons.Ghoul, "Ghoul", 9617 );
+					goto case 2;
+
+				case 4:
+					SummonButton( 1, 0, (int)Buttons.ChaosWarrior, "Chaos Warrior", 9737 );
+					goto case 3;
+
+				case 5:
+					SummonButton( 1, 1, (int)Buttons.Ringwraith, "Ringwraith", 9671 );
+					goto case 4;
+
+				case 6:
+					SummonButton( 1, 2, (int)Buttons.MummyLord, "Mummy Lord", 9639 );
+					goto case 5;
+
+				case 7:
+					SummonButton( 2, 0, (int)Buttons.DaemonOverlord, "Unholy Wyrm", 8406 );
+					goto case 6;
+
+				default: break;
+			}
+
+			switch ( 7 - slotlevel )
+			{
+				case 0:
+					break;
+
+				case 1:
+					NoSummon(2, 0);
+					break;
+
+				case 2:
+					NoSummon(1, 2);
+					goto case 1;
+
+				case 3:
+					NoSummon(1, 1);
+					goto case 2;
+
+				case 4:
+					NoSummon(1, 0);
+					goto case 3;
+
+				case 5:
+					NoSummon(0, 2);
+					goto case 4;
+
+				case 6:
+					NoSummon(0, 1);
+					goto case 5;
+
+				default: break;
+			}
+		}
+
+		public void NoSummon( int columnnumber, int rownumber )
+		{
+			AddLabel( 84 + (columnnumber * 200 ), 171 + ( rownumber * 83), 2930, "Not Available" );
+		}
+
+		public void SummonButton( int columnnumber, int rownumber, int button, string summonname, int picture )
+		{
+			AddLabel( 84 + (columnnumber * 200 ), 171 + ( rownumber * 83), 2930, summonname );
+			AddButton( 89 + (columnnumber * 200 ), 198 + ( rownumber * 83), 5601, 5605, button, GumpButtonType.Reply, 0);
+			AddItem( 200 + (columnnumber * 200 ), 162 + ( rownumber * 83), picture );
+		}
+
+		public enum Buttons
+		{
+			ExitMenu,
+			LSkeleton,
+			GSkeleton,
+			Ghoul,
+			ChaosWarrior,
+			Ringwraith,
+			MummyLord,
+			DaemonOverlord,
+			RemoveSummon
+
+		}
+
+		public void Summonicate( TeiravonMobile necromancer, Type necrosummon, string name, int stat, int level, int damage, int res )
+		{
+
+			BaseCreature summon = (BaseCreature)Activator.CreateInstance( necrosummon );
+			summon.Name = name;
+			summon.Level = 0;
+			summon.NoKillAwards = true;
+
+			double variation = (level / 2);
+			int bonus = (7 - level) * ( necromancer.PlayerLevel );
+			int necrobonus = (int)(necromancer.Skills[SkillName.Necromancy].Value / 4);
+			double damageboost = 1.0 + ( ( bonus ) / 100 ) + ( necrobonus / 200 );
+
+			if ( damageboost < 1.0 )
+				damageboost = 1.0;
+
+
+			summon.SetStr( Utility.RandomMinMax( stat - (int)(20 * variation), stat + (int)(20 * variation) ) + bonus );
+			summon.SetDex( Utility.RandomMinMax( stat - (int)(20 * variation), stat + (int)(20 * variation) ) + bonus );
+			summon.SetInt( Utility.RandomMinMax( stat - (int)(20 * variation), stat + (int)(20 * variation) ) + bonus );
+			summon.SetHits( Utility.RandomMinMax( stat - (int)(20 * variation), stat + (int)(20 * variation) ) + (int)( bonus / 2 ) + necrobonus );
+			summon.SetStam( Utility.RandomMinMax( stat - (int)(20 * variation), stat + (int)(20 * variation) ) + (int)( bonus / 2 ) + necrobonus );
+			summon.SetMana( 0 );
+
+			summon.SetDamage( (int)(damageboost * (Utility.RandomMinMax( damage - (int)(damage/2), damage ))), (int)( damageboost * (Utility.RandomMinMax( damage, damage + (int)(damage / 4) ))) );
+			summon.SetDamageType( ResistanceType.Physical, 100 - ((level - 1) * 10) );
+			summon.SetDamageType( ResistanceType.Fire, (level - 1) * 2 );
+			summon.SetDamageType( ResistanceType.Poison, ((level - 1) * 2) + ((level - 1) * 2) );
+			summon.SetDamageType( ResistanceType.Cold, (level - 1) * 2 );
+			summon.SetDamageType( ResistanceType.Energy, (level -1) * 2 );
+
+			summon.Karma = necromancer.Karma;
+
+			summon.Skills.MagicResist = necromancer.Skills.MagicResist;
+			summon.SetSkill( SkillName.Wrestling, 55 + (level*5), 75 + (level * 5) );
+			summon.SetSkill( SkillName.Tactics, 65 + (level*5), 75 + (level * 5) );
+
+			summon.SetResistance( ResistanceType.Physical, (int)(res * 0.75), res );
+			summon.SetResistance( ResistanceType.Fire, (int)(res * 0.75), res );
+			summon.SetResistance( ResistanceType.Cold, (int)(res * 0.75), res );
+			summon.SetResistance( ResistanceType.Poison, (int)(res * 0.75), res );
+			summon.SetResistance( ResistanceType.Energy, (int)(res * 0.75), res );
+
+			if ( summon.Backpack != null )
+				summon.Backpack.Delete();
+
+			summon.ControlSlots = 4;
+			summon.Controled = true;
+			summon.ControlMaster = m_Player;
+
+			Item pentagram = new BloodPentagram();
+
+			Point3D p = new Point3D( m_Player.X - 2, m_Player.Y - 3, m_Player.Z );
+			pentagram.MoveToWorld( p, m_Player.Map );
+
+			m_Player.SendMessage( "You begin summoning a {0} from the netherworld!", name );
+			m_Player.Emote( "*You see {0} begin summoning*", m_Player.Name );
+			m_Player.RevealingAction();
+
+			m_Player.FixedParticles( 0x3779, 10, 100, 9502, 67, 7, EffectLayer.Head );
+			m_Player.Paralyze( TimeSpan.FromSeconds( 4.0 * level ) );
+			m_Player.PlaySound( 0x24A );
+
+			if ( !(m_Player.Mounted) && (m_Player.Body.IsHuman) )
+				m_Player.Animate( 266, 7, 1, true, false, 0 );
+
+			Timer m_EffectTimer = new EffectTimer( m_Player, 1, level - 1, DateTime.Now + TimeSpan.FromSeconds( 3.0 ) );
+			m_EffectTimer.Start();
+
+			DateTime SummonTime = DateTime.Now + TimeSpan.FromSeconds( 4.0 * level );
+			Timer m_Timer = new NecromancerSummonTimer( m_Player, summon, pentagram, SummonTime, m_EffectTimer );
+			m_Timer.Start();
+
+		}
+
+		private class EffectTimer : Timer
+		{
+			private TeiravonMobile m_Summoner;
+			private int MaxCount;
+			private int RunCount;
+
+			public EffectTimer( TeiravonMobile from, int runcount, int maxcount, DateTime end ) : base( end - DateTime.Now )
+			{
+				m_Summoner = from;
+				Priority = TimerPriority.OneSecond;
+				RunCount = runcount;
+				MaxCount = maxcount;
+			}
+
+			protected override void OnTick()
+			{
+
+				m_Summoner.FixedParticles( 0x3779, 10, 100, 9502, 67, 7, EffectLayer.Head );
+				m_Summoner.PlaySound( 0x24A );
+				m_Summoner.RevealingAction();
+
+				if ( !(m_Summoner.Mounted) && (m_Summoner.Body.IsHuman) )
+					m_Summoner.Animate( 266, 7, 1, true, false, 0 );
+
+				if ( RunCount < MaxCount )
+				{
+					RunCount++;
+					Timer m_EffectTimer = new EffectTimer( m_Summoner, RunCount, MaxCount, DateTime.Now + TimeSpan.FromSeconds( 3.0 ) );
+					m_EffectTimer.Start();
+				}
+			}
+		}
+
+		private class NecromancerSummonTimer : Timer
+		{
+			private TeiravonMobile m_Summoner;
+			private BaseCreature m_Creature;
+			private Item m_Pentagram;
+			private Timer m_EffectTimer;
+
+			public NecromancerSummonTimer( TeiravonMobile from, BaseCreature creature, Item pentagram, DateTime end, Timer effecttimer ) : base( end - DateTime.Now )
+			{
+				m_Summoner = from;
+				m_Creature = creature;
+				m_Pentagram = pentagram;
+				m_EffectTimer = effecttimer;
+			}
+
+			protected override void OnTick()
+			{
+				if ( m_Pentagram != null )
+					m_Pentagram.Delete();
+
+				if (m_EffectTimer != null )
+					m_EffectTimer.Stop();
+
+				if ( m_Summoner.Alive )
+				{
+					m_Summoner.SendMessage( "The creature you have summoned has arrived." );
+					m_Summoner.PlaySound( 0xFB );
+
+					if ( m_Creature != null )
+					{
+						m_Creature.MoveToWorld( m_Summoner.Location, m_Summoner.Map );
+						m_Creature.ControlTarget = m_Summoner;
+						m_Creature.ControlOrder = OrderType.Follow;
+						m_Creature.BoltEffect( 0 );
+					}
+
+				}
+				else
+				{
+					m_Summoner.SendMessage( "You have died and your summoning has failed. ");
+
+					if ( m_Creature != null )
+						m_Creature.Delete();
+
+				}
+			}
+		}
+
+
+		public bool ManaCost( TeiravonMobile player, int cost )
+		{
+			if (player.Mana < cost)
+			{
+				player.SendMessage( "You need at least {0} mana to do that.", cost );
+				return true;
+			}
+
+			return false;
+		}
+
+		public override void OnResponse( Server.Network.NetState sender, RelayInfo info )
+		{
+
+			bool batwings = false;
+			bool gravedust = false;
+			bool daemonbones = false;
+			bool noxcrystal = false;
+			bool bones = false;
+
+			int m_Bones;
+			int m_BatWings;
+			int m_GraveDust;
+			int m_DaemonBones;
+			int m_NoxCrystal;
+
+			if ( ( m_Player.Followers + 4 > m_Player.FollowersMax ) && (info.ButtonID != (int)Buttons.RemoveSummon) )
+			{
+				m_Player.SendMessage( "You cannot summon more servants." );
+				return;
+			}
+
+			Container pack = m_Player.Backpack;
+
+			if (pack == null)
+			{
+				m_Player.SendMessage( "You don't have a backpack. ERROR CODE: ID: 107" );
+				return;
+			}
+
+			switch ( info.ButtonID )
+			{
+
+				case (int)Buttons.LSkeleton:
+								if ( ManaCost( m_Player, 15 ) )
+									break;
+
+								if ( pack.ConsumeTotal( typeof( Bone ), 5 ) )
+								{
+									Summonicate( m_Player, typeof( Skeleton ), "Lesser Skeleton", 50, 1, 8, 35 );
+									m_Player.Mana -= 15;
+								}
+								else
+									m_Player.SendMessage( "You need more bones." );
+
+								break;
+				case (int)Buttons.GSkeleton:
+								if ( ManaCost( m_Player, 30 ) )
+									break;
+
+								if ( pack.ConsumeTotal( typeof( Bone ), 10 ) )
+								{
+									Summonicate( m_Player, typeof( SkeletalKnight ), "Greater Skeleton", 70, 2, 13, 40 );
+									m_Player.Mana -= 30;
+
+								}
+								else
+									m_Player.SendMessage( "You need more bones." );
+
+								break;
+
+				case (int)Buttons.Ghoul:
+								if ( ManaCost( m_Player, 40 ) )
+									break;
+
+								m_GraveDust = pack.GetAmount( typeof( GraveDust ) );
+
+								if ( m_GraveDust >= 2 )
+									gravedust = true;
+
+								m_Bones = pack.GetAmount( typeof( Bone ) );
+
+								if ( m_Bones >= 15 )
+									bones = true;
+
+								if ( bones && gravedust )
+								{
+									pack.ConsumeTotal( typeof( Bone ), 15 );
+									pack.ConsumeTotal( typeof( GraveDust ), 2 );
+									Summonicate( m_Player, typeof( Zombie ), "Ghoul", 100, 3, 16, 45 );
+									m_Player.Mana -= 40;
+									break;
+
+								}
+
+								if ( !bones )
+									m_Player.SendMessage( "You need more bones." );
+
+								if ( !gravedust )
+									m_Player.SendMessage( "You need more grave dust." );
+
+								break;
+
+				case (int)Buttons.ChaosWarrior:
+								if ( ManaCost( m_Player, 50 ) )
+									break;
+
+								m_NoxCrystal = pack.GetAmount( typeof( NoxCrystal ) );
+
+								if ( m_NoxCrystal >= 3 )
+									noxcrystal = true;
+
+								m_GraveDust = pack.GetAmount( typeof( GraveDust ) );
+
+								if ( m_GraveDust >= 3 )
+									gravedust = true;
+
+								if ( noxcrystal && gravedust )
+								{
+									pack.ConsumeTotal( typeof( NoxCrystal ), 3 );
+									pack.ConsumeTotal( typeof( GraveDust ), 3 );
+									Summonicate( m_Player, typeof( ChaosDaemon ), "Chaos Warrior", 140, 4, 21, 50 );
+									m_Player.Mana -= 50;
+									break;
+								}
+
+								if ( !noxcrystal )
+									m_Player.SendMessage( "You need more nox crystals." );
+
+								if ( !gravedust )
+									m_Player.SendMessage( "You need more grave dust." );
+
+								break;
+
+				case (int)Buttons.Ringwraith:
+								if ( ManaCost( m_Player, 60 ) )
+									break;
+
+								m_BatWings = pack.GetAmount( typeof( BatWing ) );
+
+								if ( m_BatWings >= 5 )
+									batwings = true;
+
+								m_NoxCrystal = pack.GetAmount( typeof( NoxCrystal ) );
+
+								if ( m_NoxCrystal >= 5 )
+									noxcrystal = true;
+
+								if ( batwings && noxcrystal )
+								{
+									pack.ConsumeTotal( typeof( NoxCrystal ), 5 );
+									pack.ConsumeTotal( typeof( BatWing ), 5 );
+									Summonicate( m_Player, typeof( Wraith ), "Ring Wraith", 170, 5, 24, 55 );
+									m_Player.Mana -= 60;
+									break;
+								}
+
+								if ( !noxcrystal )
+									m_Player.SendMessage( "You need more nox crystals." );
+
+								if ( !batwings )
+									m_Player.SendMessage( "You need more batwings." );
+
+								break;
+
+				case (int)Buttons.MummyLord:
+
+								if ( ManaCost( m_Player, 80 ) )
+									break;
+
+								m_GraveDust = pack.GetAmount( typeof( GraveDust ) );
+
+								if ( m_GraveDust >= 10 )
+									gravedust = true;
+
+								m_NoxCrystal = pack.GetAmount( typeof( NoxCrystal ) );
+
+								if ( m_NoxCrystal >= 10 )
+									noxcrystal = true;
+
+								m_Bones = pack.GetAmount( typeof( Bone ) );
+
+								if ( m_Bones >= 10 )
+									bones = true;
+
+								if ( gravedust && noxcrystal && bones )
+								{
+									pack.ConsumeTotal( typeof( NoxCrystal ), 10 );
+									pack.ConsumeTotal( typeof( GraveDust ), 10 );
+									pack.ConsumeTotal( typeof( Bone ), 10 );
+									Summonicate( m_Player, typeof( Mummy ), "Mummy Lord", 200, 6, 33, 60 );
+									m_Player.Mana -= 60;
+									break;
+
+								}
+
+								if ( !noxcrystal )
+									m_Player.SendMessage( "You need more nox crystals." );
+
+								if ( !gravedust )
+									m_Player.SendMessage( "You need more grave dust." );
+
+								if ( !bones )
+									m_Player.SendMessage( "You need more bones." );
+
+								break;
+
+				case (int)Buttons.DaemonOverlord:
+
+								bool rubies = false;
+
+								if ( ManaCost( m_Player, 110 ) )
+									break;
+
+								m_DaemonBones = pack.GetAmount( typeof( DaemonBone ) );
+
+								if ( m_DaemonBones >= 30 )
+									daemonbones = true;
+
+								m_NoxCrystal = pack.GetAmount( typeof( NoxCrystal ) );
+
+								if ( m_NoxCrystal >= 15 )
+									noxcrystal = true;
+
+								int m_Rubies = pack.GetAmount( typeof( Ruby ) );
+
+								if ( m_Rubies >= 5 )
+									rubies = true;
+
+								if ( daemonbones && noxcrystal && rubies )
+								{
+									pack.ConsumeTotal( typeof( DaemonBone ), 30 );
+									pack.ConsumeTotal( typeof( NoxCrystal ), 15 );
+									pack.ConsumeTotal( typeof( Ruby ), 5 );
+									Summonicate( m_Player, typeof( SkeletalDragon ), "Unholy Wyrm", 300, 7, 45, 75 );
+									m_Player.Mana -= 110;
+									break;
+								}
+
+								if ( !daemonbones )
+									m_Player.SendMessage( "You need more daemon bones." );
+
+								if ( !noxcrystal )
+									m_Player.SendMessage( "You need more nox crystals." );
+
+								if ( !rubies )
+									m_Player.SendMessage( "You need more rubies." );
+
+								break;
+
+				case (int)Buttons.RemoveSummon:
+								m_Player.SendMessage( "Target a creature to send back to the netherworld." );
+								m_Player.Target = new RemoveSummonTarget( m_Player );
+								break;
+			}
+		}
+
+		private class RemoveSummonTarget : Target
+		{
+			TeiravonMobile m_Player;
+			BaseCreature m_Creature;
+
+			public RemoveSummonTarget( TeiravonMobile from ) : base( -1, false, TargetFlags.None )
+			{
+					m_Player = from;
+			}
+
+			protected override void OnTarget( Mobile from, object targ )
+			{
+
+				if ( targ is BaseCreature )
+				{
+					bool summoned = false;
+					m_Creature = (BaseCreature)targ;
+
+					Type[] m_Summoned = new Type[]
+					{
+						typeof( Skeleton ),
+						typeof( SkeletalKnight ),
+						typeof( Mummy ),
+						typeof( Zombie ),
+						typeof( SkeletalDragon ),
+						typeof( Wraith ),
+						typeof( ChaosDaemon )
+					};
+
+					if ( m_Creature.Controled && m_Creature.ControlMaster == m_Player )
+					{
+
+						for (int i = 0; i < m_Summoned.Length; i++ )
+						{
+							if ( m_Summoned[i] == m_Creature.GetType() )
+							{
+								summoned = true;
+								break;
+							}
+						}
+
+						if ( summoned )
+						{
+							m_Player.SendMessage( "You send the creature back to the netherworld!" );
+							m_Player.Emote( "*You see {0} send the {1} back to the netherworld*", m_Player.Name, m_Creature.Name );
+							m_Creature.Delete();
+						}
+						else
+							m_Player.SendMessage( "That is not a creature from the netherworld." );
+					}
+					else
+						m_Player.SendMessage( "You don't have power over that creature." );
+				}
+				else
+					m_Player.SendMessage( "You can only dismiss summoned creatures." );
+			}
+		}
+
+	}
+}
+
+
+namespace Server.Scripts.Commands
+{
+	public class NecroCommands
+	{
+		#region Command Initializers
+		public static void Initialize()
+		{
+			Server.Commands.Register( "SummonUndead", AccessLevel.Player, new CommandEventHandler( SummonUndead_OnCommand ) );
+		}
+		#endregion
+
+		[Usage( "SummonUndead" )]
+		[Description( "Allows a necromancer to summon undead servants" )]
+		private static void SummonUndead_OnCommand( CommandEventArgs e )
+		{
+			TeiravonMobile m_Player = (TeiravonMobile)e.Mobile;
+
+			if ( !m_Player.HasFeat( TeiravonMobile.Feats.SummonUndead ) )
+				m_Player.SendMessage( Teiravon.Colors.FeatMessageColor, Teiravon.Messages.NoAbility );
+			else if ( m_Player.IsNecromancer() )
+				m_Player.SendGump( new NecroSummonGump( m_Player ) );
+
+			else
+				m_Player.SendMessage( "Only necromancers can do that. ");
+		}
+	}
+}

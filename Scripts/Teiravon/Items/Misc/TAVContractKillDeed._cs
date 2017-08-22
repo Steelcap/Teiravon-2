@@ -1,0 +1,86 @@
+using System;
+using System.Collections;
+using Server;
+using Server.Mobiles;
+using Server.Targeting;
+
+namespace Server.Items
+{
+	public class ContractKillDeed : Item
+	{
+		private Serial m_TargetSerial;
+		private DateTime m_CompleteBy;
+		private int m_Payment;
+		private bool m_Completed;
+
+		public Serial Target { get { return m_TargetSerial; } set { m_TargetSerial = value; } }
+		public DateTime CompleteBy { get { return m_CompleteBy; } set { m_CompleteBy = value; } }
+		public int Payment { get { return m_Payment; } set { m_Payment = value; } }
+		public bool Completed { get { return m_Completed; } set { m_Completed = value; } }
+
+		public override void OnDoubleClick( Mobile from )
+		{
+			TeiravonMobile m_Player = from as TeiravonMobile;
+
+			if ( m_Player != null && m_Player.IsAssassin() && !m_Completed )
+			{
+				if ( DateTime.Now.Subtract( m_CompleteBy ) > TimeSpan.Zero )
+					m_Player.SendMessage( "This contract has expired." );
+
+				m_Player.Target = new ContractKillTarget( m_TargetSerial, m_CompleteBy, m_Payment );
+			}
+
+			base.OnDoubleClick (from);
+		}
+
+		[Constructable]
+		public ContractKillDeed() : base( 5360 )
+		{
+			Name = "Assassin Contract";
+			Hue = 0x450;
+			LootType = LootType.Blessed;
+		}
+
+		public ContractKillDeed( Serial serial ) : base ( serial )
+		{
+		}
+
+		public override void Serialize(GenericWriter writer)
+		{
+			base.Serialize (writer);
+		}
+
+		public override void Deserialize(GenericReader reader)
+		{
+			base.Deserialize (reader);
+		}
+
+		private class ContractKillTarget : Target
+		{
+			private Serial m_TargetSerial;
+			private DateTime m_CompleteBy;
+			private int m_Payment;
+
+			public ContractKillTarget( Serial serial, DateTime completeby, int payment ) : base( 3, false, TargetFlags.None )
+			{
+				m_TargetSerial = serial;
+				m_CompleteBy = completeby;
+				m_Payment = payment;
+			}
+
+			protected override void OnTarget( Mobile from, object targeted )
+			{
+				if ( targeted is Corpse )
+				{
+					Corpse m_Target = (Corpse)targeted;
+
+					if ( m_Target.Serial == m_TargetSerial )
+					{
+						from.SendMessage( "Contract completed..." );
+					}
+				} else
+					from.SendMessage( "That's not a corpse." );
+			}
+		}
+	}
+}

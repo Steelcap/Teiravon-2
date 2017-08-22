@@ -1,0 +1,294 @@
+using System;
+using Server;
+using Server.Mobiles;
+using Server.Items;
+
+
+namespace Server.Items
+{
+
+	public class JailedMarker : Item
+	{
+
+		private DateTime m_JailCheck;
+		private Timer m_Timer;
+		private Mobile m_Player;
+		private Point3D m_JailLoc;
+		private Map m_JailMap;
+		
+		//MAX DURATION FOR JAIL SENTENCE VARIABLES
+		private Map m_SendBackMap;
+		private Point3D m_SendBackLoc;
+		private double m_Sentence;
+		private DateTime m_MaxJailTime;
+		private Timer m_MaxTimer;
+
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public double JailSentenceHours
+		{
+			get { return m_Sentence; }
+		}
+			
+		[CommandProperty( AccessLevel.GameMaster )]
+		public DateTime JailRelease
+		{
+			get 
+			{  
+				if ( m_Sentence > 0 )
+					return m_MaxJailTime; 
+				else
+					return DateTime.Now;
+			}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public Map JailedFromMap
+		{
+			get { return m_SendBackMap; }
+			set { m_SendBackMap = value; InvalidateProperties(); }
+		}
+			
+		[CommandProperty( AccessLevel.GameMaster )]
+		public Point3D JailedFromLocation
+		{
+			get { return m_SendBackLoc; }
+			set { m_SendBackLoc = value; InvalidateProperties(); }
+		}
+		
+
+		[Constructable]
+		public JailedMarker(Mobile m, Point3D location, Map map, double jailtime, Map omap, Point3D olocation ) : base( 0x1262 )
+		{
+		Weight = 0.0;
+		Name = "I am jailed";
+		Movable = false;
+		Visible = false;
+		m_Player = m;
+		m_JailLoc = location;
+		m_JailMap = map;
+		m_JailCheck = DateTime.Now + TimeSpan.FromSeconds( 60.0 );
+		m_Timer = new JailTimer( m_Player, m_JailCheck, m_JailLoc, m_JailMap );
+		m_Timer.Start();
+		
+		//MAX DURATION AFTER WHICH SENDING BACK TO ORIGINAL LOCATION
+		m_Sentence = jailtime;
+		m_SendBackMap = omap;
+		m_SendBackLoc = olocation;
+		
+			if (m_Sentence > 0 ) 
+			{
+				m_MaxJailTime = DateTime.Now + TimeSpan.FromHours( m_Sentence );
+				m_MaxTimer = new MaxJailTimer( m_Player, m_MaxJailTime, m_SendBackLoc, m_SendBackMap, m_Sentence );
+				m_MaxTimer.Start();
+			}
+		}
+
+
+	
+		public override void OnAfterDelete()
+		{
+			if (m_Timer != null) 
+			{
+				m_Timer.Stop();
+			}
+			
+			if (m_MaxTimer != null) 
+			{
+				m_MaxTimer.Stop();
+			}
+				
+			m_Player.SendMessage( "You have been released from captivity!" );
+			base.OnAfterDelete();
+		}
+		
+		
+		private class JailTimer : Timer
+		{
+			private Mobile m_Player;
+			private Point3D m_JailLoc;
+			private Map m_JailMap;
+			private DateTime m_JailCheck;
+			private Timer m_Timer;
+			
+		
+			public JailTimer( Mobile mobile, DateTime end, Point3D loc, Map map ) : base( end - DateTime.Now )
+			{
+				Priority = TimerPriority.FiveSeconds;
+				m_Player = mobile;
+				m_JailLoc = loc;
+				m_JailMap = map;
+				m_JailCheck = end;
+			}
+		
+			protected override void OnTick()
+			{
+				
+				if ( ( m_Player != null ) && ( !m_Player.Deleted ) )
+				{
+				
+					if (m_Player.Backpack != null)
+					{
+				
+						if (m_Player.Backpack.FindItemByType( typeof( JailedMarker ) ) != null)  
+						{
+					
+							if ( !m_Player.InRange( m_JailLoc, 20 ) )
+							{
+								m_Player.PublicOverheadMessage( Network.MessageType.Emote, 0x88, true, "*Returning to Jail!*" );
+							
+									if (m_Player.Map == Map.Internal) 
+									{
+										m_Player.LogoutMap = m_JailMap;
+										m_Player.LogoutLocation = m_JailLoc;
+										m_Player.MoveToWorld( m_JailLoc, Map.Internal );
+									}
+									else
+									{
+										m_Player.MoveToWorld( m_JailLoc, m_JailMap );
+			              	 					m_Player.SendMessage( "Stay put, you're jailed!" );
+			              	 				}
+			              	 		}
+         	
+                 					m_JailCheck = DateTime.Now + TimeSpan.FromSeconds( 60.0 );
+							m_Timer = new JailTimer( m_Player, m_JailCheck, m_JailLoc, m_JailMap );
+							m_Timer.Start();
+						}
+					
+					}
+					
+				}
+			}
+		}
+		
+		
+		
+		
+		
+		
+		private class MaxJailTimer : Timer
+				{
+					//DEFINING VARIABLES FOR MAX JAIL SENTENCE
+					private Mobile m_Player;
+					private Point3D m_SendBackLoc;
+					private Map m_SendBackMap;
+					private DateTime m_MaxJailTime;
+					private Timer MaxTimer;
+					private double m_ElapsedTime;
+					private Item m_found;
+					
+				
+					public MaxJailTimer( Mobile mobile, DateTime end, Point3D location, Map map, double jailtime ) : base( end - DateTime.Now )
+					{
+						Priority = TimerPriority.OneMinute;
+						m_Player = mobile;
+						m_MaxJailTime = end;
+						m_SendBackLoc = location;
+						m_SendBackMap = map;
+						m_ElapsedTime = jailtime;
+					}
+				
+					protected override void OnTick()
+					{
+						
+						if ( ( m_Player != null ) && ( !m_Player.Deleted ) )
+						{
+						
+							if (m_Player.Backpack != null)
+							{
+						
+								if (m_Player.Backpack.FindItemByType( typeof( JailedMarker ) ) != null)  
+								{
+										m_found = m_Player.Backpack.FindItemByType( typeof( JailedMarker ), true );
+										m_found.Delete();
+										
+										if (m_Player.Map == Map.Internal) 
+										{
+											m_Player.LogoutMap = m_SendBackMap;
+											m_Player.LogoutLocation = m_SendBackLoc;
+											m_Player.MoveToWorld( m_SendBackLoc, Map.Internal );
+										}
+										else 
+										{
+											m_Player.MoveToWorld( m_SendBackLoc, m_SendBackMap );
+						              	 			m_Player.SendMessage( "Your sentence of " + m_ElapsedTime + " hours has passed." );
+						              	 		}
+					              		}
+					              	}
+		         
+						}
+					}
+				}
+		
+		
+	
+		public JailedMarker( Serial serial ) : base( serial )
+		{
+		}
+	
+		public override void Serialize( GenericWriter writer )
+		{
+		
+			base.Serialize( writer );
+		
+			writer.Write( (int) 0 ); // version
+		
+			writer.WriteDeltaTime( m_JailCheck );
+			
+			writer.Write( m_JailLoc );
+						
+			writer.Write( m_JailMap );
+			
+			writer.Write( m_Player );
+			
+			
+			writer.Write( m_SendBackMap );
+			
+			writer.Write( m_SendBackLoc );
+			
+			writer.Write( m_Sentence );
+			
+				if ( m_Sentence > 0.0 ) 
+					writer.WriteDeltaTime( m_MaxJailTime );
+			
+			
+		
+		}
+	
+	
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+	
+			int version = reader.ReadInt();
+			
+			m_JailCheck = reader.ReadDeltaTime();
+	
+			m_JailLoc = reader.ReadPoint3D();
+						
+			m_JailMap = reader.ReadMap();
+						
+			m_Player = reader.ReadMobile();
+		
+			m_Timer = new JailTimer( m_Player, m_JailCheck, m_JailLoc, m_JailMap );
+			m_Timer.Start();
+			
+			
+			m_SendBackMap = reader.ReadMap();
+			
+			m_SendBackLoc = reader.ReadPoint3D();
+			
+			m_Sentence = reader.ReadDouble();
+			
+				if (m_Sentence > 0.0) 
+				{
+						m_MaxJailTime = reader.ReadDeltaTime();
+					
+						m_MaxTimer = new MaxJailTimer( m_Player, m_MaxJailTime, m_SendBackLoc, m_SendBackMap, m_Sentence );
+						m_MaxTimer.Start();
+				}
+			
+		}
+	}
+	
+}

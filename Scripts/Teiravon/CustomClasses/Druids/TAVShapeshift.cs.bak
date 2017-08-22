@@ -1,0 +1,1809 @@
+using System;
+using Server;
+using Server.Gumps;
+using Server.Mobiles;
+using Server.Targeting;
+using Server.Targets;
+using Server.Items;
+
+namespace Server.Gumps
+{
+	public class ShapeshiftGump : Gump
+	{
+		TeiravonMobile m_Player;
+
+		public ShapeshiftGump( Mobile from ) : base( 0, 0 )
+		{
+			Closable=true;
+			Disposable=true;
+			Dragable=true;
+			Resizable=false;
+
+			m_Player = (TeiravonMobile) from;
+			m_Player.CloseGump( typeof( ShapeshiftGump ) );
+
+			AddPage(0);
+			AddBackground(153, 68, 489, 450, 9200);
+
+			AddImage(181, 100, 9278);
+			AddImage(181, 468, 9272);
+			AddImage(602, 468, 9270);
+			AddImage(602, 100, 9276);
+
+
+			AddImageTiled(187, 107, 427, 364, 9274);
+
+			//top, bottom
+			AddImageTiled(188, 99, 420, 8, 9277);
+			AddImageTiled(188, 470, 420, 8, 9271);
+
+			//left, right
+			AddImageTiled(180, 108, 8, 362, 9275);
+			AddImageTiled(606, 108, 8, 362, 9273);
+
+
+			AddLabel(338, 78, 2930, @"SHAPESHIFTING");
+
+			AddLabel(194, 113, 5, @"Special transformations");
+			AddImageTiled(302, 142, 54, 51, 3504);
+			AddImageTiled(302, 205, 54, 51, 3504);
+			AddImageTiled(302, 268, 54, 51, 3504);
+
+			if ( m_Player.IsShapeshifter() )
+			{
+				AddImageTiled(302, 331, 54, 51, 3504);
+				AddImageTiled(302, 394, 54, 51, 3504);
+				AddAlphaRegion(302, 142, 54, 303);
+			}
+			else
+				AddAlphaRegion(302, 142, 54, 177);
+
+			AddLabel(379, 113, 5, @"Custom transformations");
+			AddImageTiled(512, 142, 54, 51, 3504);
+			AddImageTiled(512, 205, 54, 51, 3504);
+			AddImageTiled(512, 268, 54, 51, 3504);
+
+			if ( m_Player.IsShapeshifter() )
+			{
+				AddImageTiled(512, 394, 54, 51, 3504);
+				AddImageTiled(512, 331, 54, 51, 3504);
+				AddAlphaRegion(512, 142, 54, 303);
+			}
+			else
+				AddAlphaRegion(512, 142, 54, 177);
+
+			AddLabel(219, 487, 2930, @"Evaluate creature");
+			AddButton(184, 486, 4005, 4007, (int)Buttons.Information, GumpButtonType.Reply, 0);
+
+			if ( m_Player.IsShifted() && m_Player.Shapeshifted )
+			{
+				AddLabel(401, 487, 2930, @"Undo transformation");
+				AddButton(366, 486, 4017, 4019, (int)Buttons.Cancel, GumpButtonType.Reply, 0);
+			}
+
+			bool DeleteTime = false;
+
+			if ( m_Player.ShapeshiftSlotDelete <= DateTime.Now )
+				DeleteTime = true;
+
+			int level = (int)(m_Player.PlayerLevel / 5) + 1;
+
+			if (level > 5)
+				level = 5;
+
+			if ( !m_Player.IsShapeshifter() && level > 3)
+				level = 3;
+
+			bool fullslot = false;
+
+			switch (level)
+			{
+				case 1: StandardTransformButton( true, (int)Buttons.STransform1, 1, "Eagle" );
+					AddItem( 310, 155, ShrinkTable.Lookup( 5 ) );
+
+					if ( FilledSlot( 1, m_Player ) )
+					{
+						FullSlot( (int)Buttons.CTransform1, 1, m_Player );
+						fullslot = true;
+
+						if ( DeleteTime )
+							DeleteButton( (int)Buttons.CDelete1, 1 );
+					}
+					else
+						EmptySlot( (int)Buttons.CAdd1, 1);
+
+					break;
+
+				case 2: StandardTransformButton( true, (int)Buttons.STransform2, 2, "Wolf" );
+					AddItem( 312, 215, ShrinkTable.Lookup( 225 ) );
+
+					if ( FilledSlot( 2, m_Player ) )
+					{
+						FullSlot( (int)Buttons.CTransform2, 2, m_Player );
+						fullslot = true;
+
+						if ( DeleteTime )
+							DeleteButton( (int)Buttons.CDelete2, 2 );
+					}
+					else
+						EmptySlot( (int)Buttons.CAdd2, 2);
+
+					goto case 1;
+
+				case 3: StandardTransformButton( true, (int)Buttons.STransform3, 3, "Panther" );
+					AddItem( 311, 274, ShrinkTable.Lookup( 214 ) );
+
+					if ( FilledSlot( 3, m_Player ) )
+					{
+						FullSlot( (int)Buttons.CTransform3, 3, m_Player );
+						fullslot = true;
+
+						if ( DeleteTime )
+							DeleteButton( (int)Buttons.CDelete3, 3 );
+					}
+					else
+						EmptySlot( (int)Buttons.CAdd3, 3);
+
+					goto case 2;
+
+				case 4: StandardTransformButton( true, (int)Buttons.STransform4, 4, "Bear" );
+					AddItem( 310, 342, ShrinkTable.Lookup( 212 ) );
+
+					if ( FilledSlot( 4, m_Player ) )
+					{
+						FullSlot( (int)Buttons.CTransform4, 4, m_Player );
+						fullslot = true;
+
+						if ( DeleteTime )
+							DeleteButton( (int)Buttons.CDelete4, 4 );
+					}
+					else
+						EmptySlot( (int)Buttons.CAdd4, 4);
+
+					goto case 3;
+
+				case 5: StandardTransformButton( true, (int)Buttons.STransform5, 5, "Animal Spirit" );
+					AddItem( 304, 398, ShrinkTable.Lookup( 165 ) );
+
+					if ( FilledSlot( 5, m_Player ) )
+					{
+						FullSlot( (int)Buttons.CTransform5, 5, m_Player );
+						fullslot = true;
+
+						if ( DeleteTime )
+							DeleteButton( (int)Buttons.CDelete5, 5 );
+					}
+					else
+						EmptySlot( (int)Buttons.CAdd5, 5);
+
+					goto case 4;
+
+				default: break;
+			}
+
+			switch( 5 - level )
+			{
+				case 0: break;
+
+				case 1:
+					if ( m_Player.IsShapeshifter() )
+					{
+						StandardNoSlot( 5 );
+						CustomNoSlot( 5 );
+					}
+					goto case 0;
+
+				case 2:
+					if ( m_Player.IsShapeshifter() )
+					{
+						StandardNoSlot( 4 );
+						CustomNoSlot( 4 );
+					}
+					goto case 1;
+
+				case 3: StandardNoSlot( 3 );
+					CustomNoSlot( 3 );
+					goto case 2;
+
+				case 4: StandardNoSlot( 2 );
+					CustomNoSlot( 2 );
+					goto case 3;
+
+				case 5: StandardNoSlot( 1 );
+					CustomNoSlot( 1 );
+					goto case 4;
+
+				default:
+					goto case 5;
+			}
+
+			if ( DeleteTime && fullslot )
+				AddLabel(568, 121, 2930, @"Delete");
+		}
+
+		private bool FilledSlot( int slot, TeiravonMobile player )
+		{
+			int slotnumber = slot - 1;
+
+			if ( ( player.ShapeshiftSlotName[slotnumber] != null ) && player.ShapeshiftSlot[slotnumber] != 0 )
+				return true;
+
+			return false;
+		}
+
+		private void DeleteButton( int button, int number )
+		{
+			AddButton(570, 92 + (number * 63), 4017, 4019, button, GumpButtonType.Reply, 0);
+		}
+
+		private void CustomNoSlot( int number )
+		{
+			AddLabel(380, 80 + (number * 63), 2930, @"Not available");
+		}
+
+		private void EmptySlot( int button, int number )
+		{
+			CustomTransformButton( true, button, number, null, 0 );
+		}
+
+		private void FullSlot( int button, int number, TeiravonMobile player )
+		{
+			int slotnumber = number - 1;
+
+			string name = player.ShapeshiftSlotName[slotnumber];
+			int bodyvalue = player.ShapeshiftSlot[slotnumber];
+
+			CustomTransformButton( false, button, number, name, bodyvalue );
+		}
+
+		private void CustomTransformButton( bool empty, int button, int number, string name, int bodyvalue )
+		{
+			if (!empty)
+			{
+				AddLabel(380, 80 + (number * 63), 2930, name );
+				AddItem( 520, 88 + (number * 63), ShrinkTable.Lookup( bodyvalue ) );
+				AddButton(382, 103 + (number * 63), 2224, 2223, button, GumpButtonType.Reply, 0);
+			}
+			else
+			{
+				AddLabel(380, 80 + (number * 63), 2930, "Empty" );
+				AddButton(443, 97 + (number* 63), 2462, 2461, button, GumpButtonType.Reply, 0);
+			}
+		}
+
+
+		private void StandardNoSlot( int number )
+		{
+			StandardTransformButton( false, 0, number, "Not available" );
+		}
+
+		private void StandardTransformButton( bool available, int button, int number, string name )
+		{
+
+			AddLabel( 197, 80 + (number * 63), 2930, name );
+
+			if ( available )
+				AddButton(199, 103 + (number * 63), 2224, 2223, button, GumpButtonType.Reply, 0);
+
+		}
+
+		public enum Buttons
+		{
+			ExitMenu,
+			Cancel,
+			Information,
+			UndoTransformation,
+			STransform1,
+			STransform2,
+			STransform3,
+			STransform4,
+			STransform5,
+			CTransform1,
+			CTransform2,
+			CTransform3,
+			CTransform4,
+			CTransform5,
+			CAdd1,
+			CAdd2,
+			CAdd3,
+			CAdd4,
+			CAdd5,
+			CDelete1,
+			CDelete2,
+			CDelete3,
+			CDelete4,
+			CDelete5
+		}
+
+		public enum TransformDifficulty
+		{
+			Level1,
+			Level5,
+			Level10,
+			Level15,
+			Level20,
+			Impossible
+		}
+
+
+		public static int GetTransformDifficulty( BaseCreature target )
+		{
+
+			BaseCreature m_Transform = target;
+
+			Type[] m_Level1 = new Type[]
+			{
+				typeof( Bird ),
+				typeof( Chicken ),
+				typeof( Eagle ),
+				typeof( Dog ),
+				typeof( Cat ),
+				typeof( BullFrog ),
+				typeof( GiantRat ),
+				typeof( JackRabbit ),
+				typeof( Rabbit ),
+				typeof( Rat ),
+				typeof( Sewerrat ),
+				typeof( Parrot ),
+				typeof( TropicalBird )
+			};
+
+			foreach( Type type in m_Level1 )
+			{
+				if ( m_Transform.GetType() == type )
+					return (int)TransformDifficulty.Level1;
+			}
+
+			Type[] m_Level5 = new Type[]
+			{
+				typeof( Cow ),
+				typeof( GreyWolf ),
+				typeof( WhiteWolf ),
+				typeof( TimberWolf ),
+				typeof( Hind ),
+				typeof( Cougar ),
+				typeof( GiantToad ),
+				typeof( Alligator ),
+				typeof( Llama ),
+				typeof( PackHorse ),
+				typeof( PackLlama ),
+				typeof( Horse ),
+				typeof( RidableLlama ),
+				typeof( Boar ),
+				typeof( Pig ),
+				typeof( MountainGoat ),
+				typeof( Sheep ),
+				typeof( Snake )
+
+			};
+
+			foreach( Type type in m_Level5 )
+			{
+				if ( m_Transform.GetType() == type )
+					return (int)TransformDifficulty.Level5;
+			}
+
+			Type[] m_Level10 = new Type[]
+			{
+				typeof( Bull ),
+				typeof( BlackBear ),
+				typeof( BrownBear ),
+				typeof( HellHound ),
+				typeof( DireWolf ),
+				typeof( GreatHart ),
+				typeof( HellCat ),
+				typeof( Panther ),
+				typeof( Beetle ),
+				typeof( DesertOstard ),
+				typeof( ForestOstard ),
+				typeof( FrenziedOstard ),
+				typeof( Ridgeback ),
+				typeof( SavageRidgeback ),
+				typeof( Gorilla ),
+				typeof( Walrus ),
+				typeof( LavaLizard ),
+				typeof( GiantSerpent ),
+				typeof( Phoenix )
+			};
+
+			foreach( Type type in m_Level10 )
+			{
+				if ( m_Transform.GetType() == type )
+					return (int)TransformDifficulty.Level10;
+			}
+
+			Type[] m_Level15 = new Type[]
+			{
+				typeof( GrizzlyBear ),
+				typeof( PolarBear ),
+				typeof( PredatorHellCat ),
+				typeof( SnowLeopard ),
+				//typeof( WarHorse ),
+				//typeof( Kirin ),
+				typeof( ScaledSwampDragon ),
+				typeof( Harpy ),
+				typeof( SilverSerpent ),
+				typeof( LavaSerpent ),
+				typeof( IceSerpent )
+			};
+
+			foreach( Type type in m_Level15 )
+			{
+				if ( m_Transform.GetType() == type )
+					return (int)TransformDifficulty.Level15;
+			}
+
+			Type[] m_Level20 = new Type[]
+			{
+				typeof( Dragon ),
+				typeof( Drake ),
+				typeof( SerpentineDragon ),
+				typeof( WhiteWyrm ),
+				typeof( Wyvern )
+			};
+
+			foreach( Type type in m_Level20 )
+			{
+				if ( m_Transform.GetType() == type )
+					return (int)TransformDifficulty.Level20;
+			}
+
+			return (int)TransformDifficulty.Impossible;
+		}
+
+
+		private void AddTransformation( int level )
+		{
+			m_Player.SendMessage( "Target a creature to add to that slot." );
+			m_Player.Target = new AddTransformationTarget( m_Player, level );
+
+		}
+
+		private void DeleteSlot( int slot, TeiravonMobile player )
+		{
+			int slotnumber = slot - 1;
+
+			player.ShapeshiftSlotName[slotnumber] = null;
+			player.ShapeshiftSlot[slotnumber] = 0;
+			player.ShapeshiftSlotLevel[slotnumber] = 0;
+			player.ShapeshiftSlotHue[slotnumber] = 0;
+
+			player.ShapeshiftSlotDelete = DateTime.Now + TimeSpan.FromHours( 4.0 );
+
+			player.SendMessage( "The transformation in slot {0} has been removed", slot );
+			player.SendMessage( "You will be able to delete again in one week" );
+
+		}
+
+		public static void SaveTransformation( TeiravonMobile from, BaseCreature target, int level, int transformdifficulty )
+		{
+			BaseCreature m_Creature = (BaseCreature)Activator.CreateInstance( target.GetType() );
+			TeiravonMobile m_Shapeshifter = from;
+
+			int BodyValue = m_Creature.BodyValue;
+			int ProperHue = m_Creature.Hue;
+			string CreatureName = (m_Creature.Name).ToLower();
+//			string TransformationName = "";
+
+/*			char[] separate = new char[]{' '};
+			string[] separated = CreatureName.Split( separate, 3 );
+
+			for( int i=0; i < separated.Length; i++ )
+			{
+				string ss = separated[i];
+
+				if ( i == 0 )
+				{
+					if ( ss == "an" || ss == "a" || ss == "the" )
+						continue;
+				}
+
+				TransformationName += char.ToUpper(ss[0]);
+
+				if ( i < separated.Length - 1 )
+					TransformationName += (ss.Substring(1, ss.Length - 1) + ' ');
+				else
+					TransformationName += (ss.Substring(1, ss.Length - 1));
+
+
+			}
+*/
+			m_Shapeshifter.ShapeshiftSlot[level] = BodyValue;
+			m_Shapeshifter.ShapeshiftSlotLevel[level] = transformdifficulty + 1;
+//			m_Shapeshifter.ShapeshiftSlotName[level] = TransformationName;
+			m_Shapeshifter.ShapeshiftSlotName[level] = CreatureName;
+			m_Shapeshifter.ShapeshiftSlotHue[level] = ProperHue;
+
+		}
+
+		public static void Infravision( TeiravonMobile player )
+		{
+			int hour, min;
+
+			Clock.GetTime( player.Map, player.X, player.Y, out hour, out min );
+
+			if ( hour > 23 || hour < 5 )
+				player.SendMessage( "Your eyes begin to adjust to the darkness around you." );
+		}
+
+		public static void ShapeshiftFunctions( bool shift, int slot, TeiravonMobile player )
+		{
+			int slotnumber = slot - 1;
+			int difficulty = player.ShapeshiftSlotLevel[slotnumber];
+			int formhue = player.ShapeshiftSlotHue[slotnumber];
+			string formname = player.ShapeshiftSlotName[slotnumber];
+
+			DateTime ShapeshiftTime;
+
+			if ( shift )
+			{
+				player.DruidForm = player.ShapeshiftSlot[slotnumber];
+				player.ShapeshiftHue = player.Hue;
+
+				player.FixedParticles( 0x377A, 1, 250, 9949, 1153, 0, EffectLayer.Head );
+				player.SendMessage( "You begin to transform into an animal." );
+
+				player.Paralyze( TimeSpan.FromSeconds( 3.0 * difficulty ) );
+
+				ShapeshiftTime = DateTime.Now + TimeSpan.FromSeconds( 3.0 * difficulty );
+
+				player.NameMod = player.ShapeshiftSlotName[slotnumber];
+
+
+			}
+
+			else
+			{
+				player.DruidForm = 0;
+
+				player.SendMessage( "You begin transforming back to normal.");
+
+				player.Paralyze( TimeSpan.FromSeconds( 5.0 ) );
+				player.NameMod = null;
+
+				ShapeshiftTime = DateTime.Now + TimeSpan.FromSeconds( 5.0 );
+
+			}
+
+
+			Timer m_Timer = new CustomTransformTimer( player, shift, slotnumber, difficulty, formhue, formname, ShapeshiftTime );
+			m_Timer.Start();
+		}
+
+		private class CustomTransformTimer : Timer
+		{
+			private TeiravonMobile m_Shapeshifter;
+			private int formdifficulty;
+			private int formhue;
+			private int slotnumber;
+			private bool shapeshift;
+			private string formname;
+
+			public CustomTransformTimer( TeiravonMobile from, bool shift, int slot, int difficulty, int hue, string name, DateTime end ) : base( end - DateTime.Now )
+			{
+				m_Shapeshifter = from;
+				shapeshift = shift;
+				formdifficulty = difficulty;
+				formname = name;
+				formhue = hue;
+				slotnumber = slot;
+			}
+
+			protected override void OnTick()
+			{
+
+				if ( shapeshift )
+				{
+					Container pack = m_Shapeshifter.Backpack;
+
+					for ( int i = 1; i < 30; i++ )
+					{
+						Item item = m_Shapeshifter.FindItemOnLayer( (Layer)i );
+
+						if ( ( item != null ) && ( pack != null ) && ( i != 9 && i != 11 && i != 15 && i != 16 && i != 21 && i < 24 ) )
+							pack.DropItem( item );
+					}
+
+					m_Shapeshifter.Shapeshifted = true;
+
+					//if (formhue != 0)
+					m_Shapeshifter.Hue = formhue;
+					
+					m_Shapeshifter.EquipItem( new CustomShapeshifterArmor( formdifficulty, formname, formhue ) );
+					m_Shapeshifter.EquipItem( new CustomShapeshifterWeapon( formdifficulty, formname, formhue ) );
+
+					m_Shapeshifter.SendMessage( "You speak now an animal language." );
+					m_Shapeshifter.CurrentLanguage = TeiravonMobile.LLupine;
+
+					Infravision( m_Shapeshifter );
+
+					m_Shapeshifter.Shapeshift( true, m_Shapeshifter.ShapeshiftSlot[slotnumber] );
+
+				}
+
+				else
+				{
+					m_Shapeshifter.Shapeshift( false, 0 );
+					m_Shapeshifter.Shapeshifted = false;
+					m_Shapeshifter.ShapeshiftNext = DateTime.Now + TimeSpan.FromMinutes( 2.0 );
+
+					Item animalskin = m_Shapeshifter.FindItemOnLayer( Layer.InnerTorso );
+
+					if ( animalskin != null && animalskin is CustomShapeshifterArmor )
+						animalskin.Delete();
+
+					Item animalweapon = m_Shapeshifter.FindItemOnLayer( Layer.TwoHanded );
+
+					if ( animalweapon != null && animalweapon is CustomShapeshifterWeapon )
+						animalweapon.Delete();
+
+					m_Shapeshifter.Hue = m_Shapeshifter.ShapeshiftHue;
+					m_Shapeshifter.SendMessage( "Your language is now Common." );
+					m_Shapeshifter.CurrentLanguage = TeiravonMobile.LCommon;
+					m_Shapeshifter.NameMod = null;
+
+				}
+			}
+		}
+
+		public static void SpecialShapeshift( bool shift, int slot, TeiravonMobile player )
+		{
+
+			DateTime ShapeshiftTime;
+			int bodyvalue = 0;
+			int bodyhue = 0;
+			string name = null;			
+
+			if ( shift )
+			{
+
+				switch ( slot )
+				{
+
+					case 1:
+						player.SendMessage( "You begin transforming into your eagle form." );
+
+						bodyvalue = 5;
+						bodyhue = 1880;
+						name = "an eagle";
+						break;
+
+					case 2:
+						player.SendMessage( "You begin transforming into your wolf form." );
+
+						bodyvalue = 225;
+						bodyhue = 0;//2229;
+						name = "a timber wolf";
+						break;
+
+					case 3:
+						player.SendMessage( "You begin transforming into your panther form." );
+
+						bodyvalue = 214;
+						bodyhue = 2306;
+						name = "a panther";
+						break;
+
+					case 4:
+						player.SendMessage( "You begin transforming into your bear form." );
+
+						bodyvalue = 212;
+						bodyhue = 1841;
+						name  = "a brown bear";
+						break;
+
+					case 5:
+						player.SendMessage( "You begin transforming into your animal spirit form. ");
+
+						bodyvalue = 165;
+						bodyhue = 2479;
+						name = "an animal spirit";
+						break;
+				}
+
+				player.DruidForm = bodyvalue;
+				player.ShapeshiftHue = player.Hue;
+				player.FixedParticles( 0x377A, 1, 250, 9949, 1153, 0, EffectLayer.Head );
+				player.Paralyze( TimeSpan.FromSeconds( 4.0 * slot ) );
+				player.NameMod = name;
+				ShapeshiftTime = DateTime.Now + TimeSpan.FromSeconds( 4.0 * slot );
+
+			}
+			else
+			{
+				player.DruidForm = 0;
+				player.SendMessage( "Your language is now Common.");
+				player.Paralyze( TimeSpan.FromSeconds( 5.0 ) );
+				ShapeshiftTime = DateTime.Now + TimeSpan.FromSeconds( 5 );
+
+			}
+
+			Timer m_Timer = new SpecialTransformTimer( player, shift, slot, bodyvalue, bodyhue, ShapeshiftTime );
+			m_Timer.Start();
+		}
+
+		private class SpecialTransformTimer : Timer
+		{
+			private TeiravonMobile m_Shapeshifter;
+			private int slotnumber;
+			private int bodyvalue;
+			private int bodyhue;
+			private bool shapeshift;
+
+			public SpecialTransformTimer( TeiravonMobile from, bool shift, int number, int body, int hue, DateTime end ) : base( end - DateTime.Now )
+			{
+				m_Shapeshifter = from;
+				shapeshift = shift;
+				slotnumber = number;
+				bodyvalue = body;
+				bodyhue = hue;
+			}
+
+			protected override void OnTick()
+			{
+
+				if ( shapeshift )
+				{
+					Container pack = m_Shapeshifter.Backpack;
+
+					for ( int i = 1; i < 30; i++ )
+					{
+						Item item = m_Shapeshifter.FindItemOnLayer( (Layer)i );
+
+						if ( ( item != null ) && ( pack != null ) && ( i != 9 && i != 11 && i != 15 && i != 16 && i != 21 && i < 24 ) )
+							pack.DropItem( item );
+					}
+
+					m_Shapeshifter.ShapeshiftSpecial = true;
+					m_Shapeshifter.Shapeshifted = true;
+					m_Shapeshifter.Hue = bodyhue;
+					m_Shapeshifter.EquipItem( new ShapeshifterArmor( slotnumber ) );
+					m_Shapeshifter.EquipItem( new ShapeshifterWeapon( slotnumber ) );
+
+					m_Shapeshifter.SendMessage( "You speak now an animal language." );
+					m_Shapeshifter.CurrentLanguage = TeiravonMobile.LLupine;
+
+					Infravision( m_Shapeshifter );
+
+					m_Shapeshifter.Shapeshift( true, bodyvalue );
+
+				}
+
+				else
+				{
+					m_Shapeshifter.Shapeshift( false, 0 );
+					m_Shapeshifter.ShapeshiftSpecial = false;
+					m_Shapeshifter.Shapeshifted = false;
+					m_Shapeshifter.ShapeshiftNext = DateTime.Now + TimeSpan.FromMinutes( 1 );
+
+					Item animalskin = m_Shapeshifter.FindItemOnLayer( Layer.InnerTorso );
+
+					if ( animalskin != null && animalskin is ShapeshifterArmor )
+						animalskin.Delete();
+
+					Item animalweapon = m_Shapeshifter.FindItemOnLayer( Layer.TwoHanded );
+
+					if ( animalweapon != null && animalweapon is ShapeshifterWeapon )
+						animalweapon.Delete();
+
+					m_Shapeshifter.Hue = m_Shapeshifter.ShapeshiftHue;
+					m_Shapeshifter.SendMessage( "Your language is now Common." );
+					m_Shapeshifter.CurrentLanguage = TeiravonMobile.LCommon;
+					m_Shapeshifter.NameMod = null;
+
+				}
+			}
+		}
+
+		private void NoTransform( TeiravonMobile player )
+		{
+			player.SendMessage( "Transform back to normal first!" );
+			player.SendGump( new ShapeshiftGump( player ) );
+		}
+
+		private bool NextTransform( TeiravonMobile player )
+		{
+			if ( player.ShapeshiftNext > DateTime.Now )
+			{
+				player.SendMessage( "You haven't recovered from your previous shapeshift." );
+				return true;
+			}
+
+			return false;
+		}
+
+
+		public override void OnResponse( Server.Network.NetState sender, RelayInfo info )
+		{
+
+			switch ( info.ButtonID )
+			{
+
+				case (int)Buttons.CAdd1:	AddTransformation( (int)TransformDifficulty.Level1 );
+								break;
+
+				case (int)Buttons.CAdd2:	AddTransformation( (int)TransformDifficulty.Level5 );
+								break;
+
+				case (int)Buttons.CAdd3:	AddTransformation( (int)TransformDifficulty.Level10 );
+								break;
+
+				case (int)Buttons.CAdd4:	AddTransformation( (int)TransformDifficulty.Level15 );
+								break;
+
+				case (int)Buttons.CAdd5:	AddTransformation( (int)TransformDifficulty.Level20 );
+								break;
+
+				case (int)Buttons.CDelete1:	DeleteSlot( 1, m_Player );
+								break;
+
+				case (int)Buttons.CDelete2:	DeleteSlot( 2, m_Player );
+								break;
+
+				case (int)Buttons.CDelete3:	DeleteSlot( 3, m_Player );
+								break;
+
+				case (int)Buttons.CDelete4:	DeleteSlot( 4, m_Player );
+								break;
+
+				case (int)Buttons.CDelete5:	DeleteSlot( 5, m_Player );
+								break;
+
+				case (int)Buttons.Information:
+
+								m_Player.SendMessage( "Target a creature." );
+								m_Player.Target = new TransformationInformation( m_Player );
+								break;
+
+				case (int)Buttons.CTransform1:
+								if ( m_Player.IsShifted() || m_Player.Shapeshifted )
+									NoTransform( m_Player );
+								else if ( NextTransform ( m_Player ) )
+									break;
+								else
+									ShapeshiftFunctions( true, 1, m_Player );
+
+								break;
+				case (int)Buttons.CTransform2:
+
+								if ( m_Player.IsShifted() || m_Player.Shapeshifted )
+									NoTransform( m_Player );
+								else if ( NextTransform ( m_Player ) )
+									break;
+								else
+									ShapeshiftFunctions( true, 2, m_Player );
+
+								break;
+				case (int)Buttons.CTransform3:
+
+								if ( m_Player.IsShifted() || m_Player.Shapeshifted )
+									NoTransform( m_Player );
+								else if ( NextTransform ( m_Player ) )
+									break;
+								else
+									ShapeshiftFunctions( true, 3, m_Player );
+
+								break;
+				case (int)Buttons.CTransform4:
+
+								if ( m_Player.IsShifted() || m_Player.Shapeshifted )
+									NoTransform( m_Player );
+								else if ( NextTransform ( m_Player ) )
+									break;
+								else
+									ShapeshiftFunctions( true, 4, m_Player );
+
+								break;
+				case (int)Buttons.CTransform5:
+
+								if ( m_Player.IsShifted() || m_Player.Shapeshifted )
+									NoTransform( m_Player );
+								else if ( NextTransform ( m_Player ) )
+									break;
+								else
+									ShapeshiftFunctions( true, 5, m_Player );
+
+								break;
+
+				case (int)Buttons.STransform1:
+								if ( m_Player.IsShifted() || m_Player.Shapeshifted )
+									NoTransform( m_Player );
+								else if ( NextTransform ( m_Player ) )
+									break;
+								else
+									SpecialShapeshift( true, 1, m_Player );
+
+								break;
+				case (int)Buttons.STransform2:
+
+								if ( m_Player.IsShifted() || m_Player.Shapeshifted )
+									NoTransform( m_Player );
+								else if ( NextTransform ( m_Player ) )
+									break;
+								else
+									SpecialShapeshift( true, 2, m_Player );
+
+								break;
+				case (int)Buttons.STransform3:
+
+								if ( m_Player.IsShifted() || m_Player.Shapeshifted )
+									NoTransform( m_Player );
+								else if ( NextTransform ( m_Player ) )
+									break;
+								else
+									SpecialShapeshift( true, 3, m_Player );
+
+								break;
+				case (int)Buttons.STransform4:
+
+								if ( m_Player.IsShifted() || m_Player.Shapeshifted )
+									NoTransform( m_Player );
+								else if ( NextTransform ( m_Player ) )
+									break;
+								else
+									SpecialShapeshift( true, 4, m_Player );
+
+								break;
+				case (int)Buttons.STransform5:
+
+								if ( m_Player.IsShifted() || m_Player.Shapeshifted )
+									NoTransform( m_Player );
+								else if ( NextTransform ( m_Player ) )
+									break;
+								else
+									SpecialShapeshift( true, 5, m_Player );
+
+								break;
+
+				case (int)Buttons.Cancel:
+								if ( m_Player.ShapeshiftSpecial )
+									SpecialShapeshift( false, 1, m_Player );
+								else
+									ShapeshiftFunctions( false, 1, m_Player );
+								break;
+
+				default:
+								break;
+			}
+		}
+
+	}
+
+}
+
+
+
+namespace Server.Items
+{
+	public class CustomShapeshifterWeapon : BaseWeapon
+	{
+		public override bool DisplayLootType{ get{ return false; } }
+
+		public override WeaponAbility PrimaryAbility{ get{ return WeaponAbility.Disarm; } }
+		public override WeaponAbility SecondaryAbility{ get{ return WeaponAbility.ParalyzingBlow; } }
+
+		public override SkillName DefSkill{ get{ return SkillName.Wrestling; } }
+		public override WeaponType DefType{ get{ return WeaponType.Bashing; } }
+		public override WeaponAnimation DefAnimation{ get{ return WeaponAnimation.Wrestle; } }
+
+		public override int AosMinDamage{ get{ return 8; } }
+		public override int AosMaxDamage{ get{ return 11; } }
+		public override int AosSpeed{ get{ return 35; } }
+	 	public override int DefHitSound { get { return -1; } }
+       	 	public override int DefMissSound { get { return -1; } }
+
+		public int WeaponLevel = 1;
+
+		//[Constructable]
+		public CustomShapeshifterWeapon( int slotlevel, string name, int hue ) : base( 0x2644 )
+		{
+			Weight = 0.0;
+			Movable = false;
+
+			if (name != null)
+				Name = name + "'s Limb";
+			else
+				Name = "Animal Limb";
+
+			Resource = CraftResource.None;
+			Hue = hue;
+			LootType = LootType.Newbied;
+			Layer = Layer.TwoHanded;
+			WeaponLevel = slotlevel;
+
+
+			switch ( slotlevel )
+			{
+				case 1:
+					Attributes.WeaponDamage = Utility.RandomMinMax( 3, 10 );
+
+					break;
+
+				case 2:
+
+					MinDamage = Utility.RandomMinMax( 6, 9 );
+					MaxDamage = Utility.RandomMinMax( 10, 12 );
+					Speed = Utility.RandomMinMax( 32, 42 );
+
+					Attributes.AttackChance = Utility.RandomMinMax( 5, 12 );
+					Attributes.WeaponDamage = Utility.RandomMinMax( 17, 25 );
+
+					break;
+
+				case 3:
+
+					MinDamage = Utility.RandomMinMax( 10, 13);
+					MaxDamage = Utility.RandomMinMax( 14, 15);
+					Speed = Utility.RandomMinMax( 38, 44);
+
+					Attributes.AttackChance = Utility.RandomMinMax( 12, 18 );
+					Attributes.WeaponDamage = Utility.RandomMinMax( 25, 45 );
+
+					break;
+
+				case 4:
+
+					MinDamage = Utility.RandomMinMax( 12, 14 );
+					MaxDamage = Utility.RandomMinMax( 15, 18 );
+					Speed = Utility.RandomMinMax( 32, 38);
+
+					Attributes.AttackChance = Utility.RandomMinMax( 13, 27 );
+					Attributes.WeaponDamage = Utility.RandomMinMax( 35, 52 );
+
+
+
+					break;
+
+				case 5:
+
+					MinDamage = Utility.RandomMinMax( 13, 15 );
+					MaxDamage = Utility.RandomMinMax( 16, 19 );
+					Speed = Utility.RandomMinMax( 34, 38 );
+
+					Attributes.AttackChance = Utility.RandomMinMax( 25, 35 );
+					Attributes.WeaponDamage = Utility.RandomMinMax( 46, 68 );
+
+					break;
+
+				default: break;
+			}
+
+		}
+
+		public override void GetDamageTypes( Mobile wielder, out int phys, out int fire, out int cold, out int pois, out int nrgy )
+		{
+			switch ( WeaponLevel )
+			{
+
+				case 1:
+					phys = 100;
+					fire = pois = nrgy = cold = 0;
+					break;
+
+				case 2:
+					phys = 60;
+					pois = 20;
+					cold = 20;
+					nrgy = fire = 0;
+					break;
+
+				case 3:
+					phys = 50;
+					pois = 20;
+					cold = 10;
+					nrgy = 10;
+					fire = 10;
+					break;
+
+				case 4:
+					phys = 25;
+					pois = 20;
+					cold = 20;
+					fire = 15;
+					nrgy = 20;
+					break;
+
+				case 5:
+					phys = 10;
+					fire = 25;
+					pois = 20;
+					nrgy = 25;
+					cold = 20;
+					break;
+
+				default:
+					phys = 100;
+					fire = pois = nrgy = cold = 0;
+					break;
+			}
+
+		}
+
+		public override DeathMoveResult OnParentDeath( Mobile parent )
+		{
+			return DeathMoveResult.RemainEquiped;
+		}
+
+		public override void GetProperties( ObjectPropertyList list )
+		{
+			list.Add( Name );
+		}
+
+
+		public override void OnRemoved( object parent )
+		{
+			base.OnRemoved( parent);
+
+			if ( this != null )
+				this.Delete();
+		}
+
+
+		public CustomShapeshifterWeapon( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+			writer.Write( (int) 0 );
+		}
+
+		public override void Deserialize(GenericReader reader)
+		{
+			base.Deserialize( reader );
+			int version = reader.ReadInt();
+		}
+	}
+
+	[FlipableAttribute( 0x13db, 0x13e2 )]
+	public class CustomShapeshifterArmor : BaseArmor
+	{
+		public override int BasePhysicalResistance{ get{ return 10; } }
+		public override int BaseFireResistance{ get{ return 10; } }
+		public override int BaseColdResistance{ get{ return 10; } }
+		public override int BasePoisonResistance{ get{ return 10; } }
+		public override int BaseEnergyResistance{ get{ return 10; } }
+
+		public override bool DisplayLootType{ get{ return false; } }
+		public override ArmorMaterialType MaterialType{ get{ return ArmorMaterialType.Leather; } }
+
+
+		//[Constructable]
+		public CustomShapeshifterArmor( int slotlevel, string name, int hue ) : base( 0x13DB )
+		{
+			Weight = 0.0;
+			Movable = false;
+			Hue = hue;
+			LootType = LootType.Newbied;
+
+			if (name != null)
+				Name = name + "'s Hide";
+			else
+				Name = "Animal Hide";
+
+			switch ( slotlevel )
+			{
+				case 1:
+
+					Attributes.RegenHits = 4;
+					Attributes.BonusDex = Utility.RandomMinMax( 10, 20 );
+					Attributes.BonusStam = Utility.RandomMinMax( 5, 10 );
+					Attributes.BonusHits = Utility.RandomMinMax( 12, 15 );
+
+					SkillBonuses.SetValues( 0, SkillName.Anatomy, 5.0 );
+					SkillBonuses.SetValues( 1, SkillName.Tracking, 15.0 );
+
+					PhysicalBonus = Utility.RandomMinMax( 11, 27 );
+					ColdBonus = Utility.RandomMinMax( 15, 30 );
+					EnergyBonus = Utility.RandomMinMax( 13, 32 );
+					PoisonBonus = Utility.RandomMinMax( 14, 31 );
+					FireBonus = Utility.RandomMinMax( 15, 32 );
+
+					break;
+
+		                case 2:
+
+					Attributes.RegenHits = 5;
+					Attributes.BonusStr = Utility.RandomMinMax( 3, 10);
+					Attributes.BonusDex = Utility.RandomMinMax( 12, 20);
+					Attributes.BonusStam = Utility.RandomMinMax( 15, 27);
+					Attributes.BonusHits = Utility.RandomMinMax( 15, 35);
+
+					Attributes.DefendChance = Utility.RandomMinMax( 3, 10);
+
+					SkillBonuses.SetValues( 0, SkillName.Anatomy, 10.0 );
+					SkillBonuses.SetValues( 1, SkillName.Tracking, 25.0 );
+
+					PhysicalBonus = Utility.RandomMinMax( 15, 28 );
+					ColdBonus = Utility.RandomMinMax( 17, 35 );
+					EnergyBonus = Utility.RandomMinMax( 17, 35 );
+					PoisonBonus = Utility.RandomMinMax( 17, 35 );
+					FireBonus = Utility.RandomMinMax( 18, 39 );
+
+			 		break;
+
+				case 3:
+
+					Attributes.RegenHits = 4;
+					Attributes.BonusStr = Utility.RandomMinMax( 13, 25 );
+					Attributes.BonusDex = Utility.RandomMinMax( 20, 27 );
+					Attributes.BonusStam = Utility.RandomMinMax( 20, 40 );
+					Attributes.BonusHits = Utility.RandomMinMax( 17, 36 );
+
+					Attributes.DefendChance = Utility.RandomMinMax( 7, 13);
+
+					SkillBonuses.SetValues( 0, SkillName.Anatomy, 15.0 );
+					SkillBonuses.SetValues( 1, SkillName.Tracking, 35.0 );
+
+					PhysicalBonus = Utility.RandomMinMax( 25, 40 );
+					ColdBonus = Utility.RandomMinMax( 35, 49 );
+					EnergyBonus = Utility.RandomMinMax( 35, 51 );
+					PoisonBonus = Utility.RandomMinMax( 35, 52 );
+					FireBonus = Utility.RandomMinMax( 35, 51 );
+
+					break;
+
+				case 4:
+
+					Attributes.RegenHits = 5;
+					Attributes.BonusStr = Utility.RandomMinMax( 40, 60 );
+					Attributes.BonusDex = Utility.RandomMinMax( 40, 50 );
+					Attributes.BonusStam = Utility.RandomMinMax( 30, 60 );
+					Attributes.BonusHits = Utility.RandomMinMax( 30, 60 );
+
+					Attributes.DefendChance = Utility.RandomMinMax( 20, 30 );
+
+					SkillBonuses.SetValues( 0, SkillName.Wrestling, 5.0 );
+					SkillBonuses.SetValues( 1, SkillName.Anatomy, 20.0 );
+					SkillBonuses.SetValues( 2, SkillName.Tracking, 45.0 );
+
+					PhysicalBonus = Utility.RandomMinMax( 32, 43 );
+					ColdBonus = Utility.RandomMinMax( 38, 52 );
+					EnergyBonus = Utility.RandomMinMax( 37, 52 );
+					PoisonBonus = Utility.RandomMinMax( 36, 52 );
+					FireBonus = Utility.RandomMinMax( 38, 52 );
+
+					break;
+
+				case 5:
+
+					Attributes.RegenHits = 6;
+					Attributes.BonusDex = Utility.RandomMinMax( 40, 62 );
+					Attributes.BonusStr = Utility.RandomMinMax( 50, 75 );
+					Attributes.BonusHits = Utility.RandomMinMax( 45, 70 );
+					Attributes.BonusStam = Utility.RandomMinMax( 55, 70 );
+					Attributes.BonusInt = Utility.RandomMinMax( 30, 40 );
+					Attributes.BonusMana = Utility.RandomMinMax( 30, 40 );
+
+					Attributes.DefendChance = Utility.RandomMinMax( 17, 25 );
+
+					SkillBonuses.SetValues( 0, SkillName.Wrestling, 15.0 );
+					SkillBonuses.SetValues( 1, SkillName.Anatomy, 35.0 );
+					SkillBonuses.SetValues( 2, SkillName.Tracking, 55.0 );
+					SkillBonuses.SetValues( 3, SkillName.DetectHidden, 100.0 );
+
+					PhysicalBonus = Utility.RandomMinMax( 45, 53 );
+					ColdBonus = Utility.RandomMinMax( 47, 57);
+					EnergyBonus = Utility.RandomMinMax( 47, 57);
+					PoisonBonus = Utility.RandomMinMax( 47, 57);
+					FireBonus = Utility.RandomMinMax( 47, 57);
+
+					break;
+
+               			 default: break;
+			}
+		}
+
+
+		public override DeathMoveResult OnParentDeath( Mobile parent )
+		{
+			return DeathMoveResult.RemainEquiped;
+		}
+
+		public override void GetProperties( ObjectPropertyList list )
+		{
+			list.Add( Name );
+		}
+
+		public override void OnRemoved( object parent )
+		{
+			base.OnRemoved( parent);
+
+			if ( this != null )
+				this.Delete();
+		}
+
+		public CustomShapeshifterArmor( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+			writer.Write( (int) 0 );
+		}
+
+		public override void Deserialize(GenericReader reader)
+		{
+			base.Deserialize( reader );
+			int version = reader.ReadInt();
+
+		}
+	}
+
+	public class ShapeshifterWeapon : BaseWeapon
+	{
+		public override bool DisplayLootType{ get{ return false; } }
+
+		public override WeaponAbility PrimaryAbility{ get{ return WeaponAbility.Disarm; } }
+		public override WeaponAbility SecondaryAbility{ get{ return WeaponAbility.ParalyzingBlow; } }
+
+		public override SkillName DefSkill{ get{ return SkillName.Wrestling; } }
+		public override WeaponType DefType{ get{ return WeaponType.Bashing; } }
+		public override WeaponAnimation DefAnimation{ get{ return WeaponAnimation.Wrestle; } }
+
+		public override int AosMinDamage{ get{ return 8; } }
+		public override int AosMaxDamage{ get{ return 11; } }
+		public override int AosSpeed{ get{ return 35; } }
+
+		public override int DefHitSound { get { return -1; } }
+       	 	public override int DefMissSound { get { return -1; } }
+
+		public int WeaponLevel = 1;
+
+		//[Constructable]
+		public ShapeshifterWeapon( int slotlevel ) : base( 0x27F6 )
+		{
+			Weight = 0.0;
+			Movable = false;
+			LootType = LootType.Newbied;
+			Layer = Layer.TwoHanded;
+			WeaponLevel = slotlevel;
+			Resource = CraftResource.None;
+
+			switch ( slotlevel )
+			{
+				case 1:
+					Name = "Eagle's Talons";
+					Hue = 1880;
+					ItemID = 0x27FA;
+
+					Attributes.WeaponDamage = Utility.RandomMinMax( 5, 15 );
+
+					break;
+
+				case 2:
+					Name = "Wolf's Paw";
+					Hue = 2229;
+
+					MinDamage = Utility.RandomMinMax( 9, 12 );
+					MaxDamage = Utility.RandomMinMax( 12, 15 );
+					Speed = Utility.RandomMinMax( 32, 42 );
+
+//					Attributes.AttackChance = Utility.RandomMinMax( 5, 15 );
+					Attributes.WeaponDamage = Utility.RandomMinMax( 10, 25 );
+
+					break;
+
+				case 3:
+					Name = "Panther's Claw";
+					Hue = 2306;
+
+					MinDamage = Utility.RandomMinMax( 12, 15);
+					MaxDamage = Utility.RandomMinMax( 15, 17);
+					Speed = Utility.RandomMinMax( 38, 46);
+
+//					Attributes.AttackChance = Utility.RandomMinMax( 15, 20 );
+					Attributes.WeaponDamage = Utility.RandomMinMax( 15, 35 );
+
+					break;
+
+				case 4:
+					Name = "Bear's Paw";
+					Hue = 1841;
+
+					MinDamage = Utility.RandomMinMax( 13, 15 );
+					MaxDamage = Utility.RandomMinMax( 17, 19 );
+					Speed = Utility.RandomMinMax( 32, 38);
+
+//					Attributes.AttackChance = Utility.RandomMinMax( 15, 30 );
+					Attributes.WeaponDamage = Utility.RandomMinMax( 20, 45 );
+
+
+
+					break;
+
+				case 5:
+					Name = "Spirit Appendage";
+					Hue = 2479;
+					ItemID = 0x27F8;
+
+					MinDamage = Utility.RandomMinMax( 15, 18 );
+					MaxDamage = Utility.RandomMinMax( 18, 20 );
+					Speed = Utility.RandomMinMax( 34, 38 );
+
+//					Attributes.AttackChance = Utility.RandomMinMax( 30, 45 );
+					Attributes.WeaponDamage = Utility.RandomMinMax( 35, 60 );
+
+					break;
+
+				default: break;
+			}
+
+		}
+
+		public override void GetDamageTypes( Mobile wielder, out int phys, out int fire, out int cold, out int pois, out int nrgy )
+		{
+			switch ( WeaponLevel )
+			{
+
+				case 1:
+					phys = 100;
+					fire = pois = nrgy = cold = 0;
+					break;
+
+				case 2:
+					phys = 90;
+					pois = 10;
+					cold = nrgy = fire = 0;
+					break;
+
+				case 3:
+					phys = 80;
+					pois = 10;
+					cold = 10;
+					nrgy = fire = 0;
+					break;
+
+				case 4:
+					phys = 70;
+					pois = 10;
+					cold = 10;
+					fire = 10;
+					nrgy = 0;
+					break;
+
+				case 5:
+					phys = 60;
+					pois = 10;
+					cold = 10;
+					fire = 10;
+					nrgy = 10;
+					break;
+
+				default:
+					phys = 100;
+					fire = pois = nrgy = cold = 0;
+					break;
+			}
+
+		}
+
+		public override DeathMoveResult OnParentDeath( Mobile parent )
+		{
+			return DeathMoveResult.RemainEquiped;
+		}
+
+		public override void GetProperties( ObjectPropertyList list )
+		{
+			list.Add( Name );
+		}
+
+
+		public override void OnRemoved( object parent )
+		{
+			base.OnRemoved( parent);
+
+			if ( this != null )
+				this.Delete();
+		}
+
+
+		public ShapeshifterWeapon( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+			writer.Write( (int) 0 );
+		}
+
+		public override void Deserialize(GenericReader reader)
+		{
+			base.Deserialize( reader );
+			int version = reader.ReadInt();
+		}
+	}
+
+
+
+	[FlipableAttribute( 0x13cc, 0x13d3 )]
+	public class ShapeshifterArmor : BaseArmor
+	{
+		public override int BasePhysicalResistance{ get{ return 10; } }
+		public override int BaseFireResistance{ get{ return 10; } }
+		public override int BaseColdResistance{ get{ return 10; } }
+		public override int BasePoisonResistance{ get{ return 10; } }
+		public override int BaseEnergyResistance{ get{ return 10; } }
+
+		//public override int InitMinHits{ get{ return 30; } }
+		//public override int InitMaxHits{ get{ return 40; } }
+
+		public override ArmorMaterialType MaterialType{ get{ return ArmorMaterialType.Leather; } }
+		public override CraftResource DefaultResource{ get{ return CraftResource.None; } }
+		public override bool DisplayLootType{ get{ return false; } }
+
+		//[Constructable]
+		public ShapeshifterArmor( int slotlevel ) : base( 0x13CC )
+		{
+			Weight = 0.0;
+			Movable = false;
+			LootType = LootType.Newbied;
+
+			switch ( slotlevel )
+			{
+				case 1:
+					Name = "Eagle's feathers";
+					Hue = 1880;
+
+					Attributes.RegenHits = 4;
+					Attributes.BonusDex = Utility.RandomMinMax( 15, 25 );
+					Attributes.BonusStam = Utility.RandomMinMax( 5, 15 );
+					Attributes.BonusHits = Utility.RandomMinMax( 10, 20 );
+
+					PhysicalBonus = Utility.RandomMinMax( 12, 30 );
+					ColdBonus = Utility.RandomMinMax( 20, 35 );
+					EnergyBonus = Utility.RandomMinMax( 20, 35 );
+					PoisonBonus = Utility.RandomMinMax( 20, 35 );
+					FireBonus = Utility.RandomMinMax( 20, 35 );
+
+					break;
+
+				case 2:
+					Name = "Wolf's Fur";
+					Hue = 2229;
+
+					Attributes.RegenHits = 4;
+					Attributes.BonusStr = Utility.RandomMinMax( 5, 15 );
+					Attributes.BonusDex = Utility.RandomMinMax( 15, 25 );
+					Attributes.BonusStam = Utility.RandomMinMax( 25, 35 );
+					Attributes.BonusHits = Utility.RandomMinMax( 20, 45 );
+
+					Attributes.DefendChance = Utility.RandomMinMax( 1, 5);
+
+					PhysicalBonus = Utility.RandomMinMax( 20, 30 );
+					ColdBonus = Utility.RandomMinMax( 20, 40 );
+					EnergyBonus = Utility.RandomMinMax( 20, 40 );
+					PoisonBonus = Utility.RandomMinMax( 20, 40 );
+					FireBonus = Utility.RandomMinMax( 20, 40 );
+
+					break;
+
+				case 3:
+					Name = "Panther's Fur";
+					Hue = 2306;
+
+					Attributes.RegenHits = 4;
+					Attributes.BonusStr = Utility.RandomMinMax( 20, 30 );
+					Attributes.BonusDex = Utility.RandomMinMax( 25, 35 );
+					Attributes.BonusStam = Utility.RandomMinMax( 30, 50 );
+					Attributes.BonusHits = Utility.RandomMinMax( 25, 40 );
+
+					Attributes.DefendChance = Utility.RandomMinMax( 1, 10);
+
+					SkillBonuses.SetValues( 0, SkillName.Wrestling, 5.0 );
+
+					PhysicalBonus = Utility.RandomMinMax( 25, 40 );
+					ColdBonus = Utility.RandomMinMax( 35, 50 );
+					EnergyBonus = Utility.RandomMinMax( 35, 50 );
+					PoisonBonus = Utility.RandomMinMax( 35, 50 );
+					FireBonus = Utility.RandomMinMax( 35, 50 );
+
+					break;
+
+				case 4:
+					Name = "Bear's Fur";
+					Hue = 1841;
+
+					Attributes.RegenHits = 4;
+					Attributes.BonusStr = Utility.RandomMinMax( 40, 60 );
+					Attributes.BonusDex = Utility.RandomMinMax( 40, 50 );
+					Attributes.BonusStam = Utility.RandomMinMax( 30, 60 );
+					Attributes.BonusHits = Utility.RandomMinMax( 30, 60 );
+
+					Attributes.DefendChance = Utility.RandomMinMax( 5, 15 );
+
+					SkillBonuses.SetValues( 0, SkillName.Wrestling, 10.0 );
+
+					PhysicalBonus = Utility.RandomMinMax( 35, 45 );
+					ColdBonus = Utility.RandomMinMax( 40, 55 );
+					EnergyBonus = Utility.RandomMinMax( 40, 55 );
+					PoisonBonus = Utility.RandomMinMax( 40, 55 );
+					FireBonus = Utility.RandomMinMax( 40, 55 );
+
+					break;
+
+				case 5:
+					Name = "Animal Spirit's Shroud";
+					Hue = 2479;
+					ItemID = 0x27CD;
+
+					Attributes.RegenHits = 5;
+					Attributes.BonusDex = Utility.RandomMinMax( 50, 70 );
+					Attributes.BonusStr = Utility.RandomMinMax( 60, 80 );
+					Attributes.BonusHits = Utility.RandomMinMax( 40, 75 );
+					Attributes.BonusStam = Utility.RandomMinMax( 65, 85 );
+					Attributes.BonusInt = Utility.RandomMinMax( 40, 50 );
+					Attributes.BonusMana = Utility.RandomMinMax( 40, 50 );
+
+					Attributes.DefendChance = Utility.RandomMinMax( 10, 20 );
+
+					SkillBonuses.SetValues( 0, SkillName.Wrestling, 20.0 );
+
+					PhysicalBonus = Utility.RandomMinMax( 40, 50 );
+					ColdBonus = Utility.RandomMinMax( 45, 60);
+					EnergyBonus = Utility.RandomMinMax( 45, 60);
+					PoisonBonus = Utility.RandomMinMax( 45, 60);
+					FireBonus = Utility.RandomMinMax( 45, 60);
+
+					break;
+
+				default: break;
+			}
+
+		}
+
+		public override DeathMoveResult OnParentDeath( Mobile parent )
+		{
+			return DeathMoveResult.RemainEquiped;
+		}
+
+
+		public override void GetProperties( ObjectPropertyList list )
+		{
+			list.Add( Name );
+		}
+
+
+		public override void OnRemoved( object parent )
+		{
+			base.OnRemoved( parent);
+
+			if ( this != null )
+				this.Delete();
+		}
+
+		public ShapeshifterArmor( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+			writer.Write( (int) 0 );
+		}
+
+		public override void Deserialize(GenericReader reader)
+		{
+			base.Deserialize( reader );
+			int version = reader.ReadInt();
+		}
+	}
+}
+
+
+namespace Server.Targets
+{
+
+	public class AddTransformationTarget : Target
+	{
+		TeiravonMobile m_Player;
+		BaseCreature m_Creature;
+		int SlotLevel;
+		int TransformDifficulty;
+
+		public AddTransformationTarget( TeiravonMobile from, int level ) : base( -1, false, TargetFlags.None )
+		{
+			m_Player = from;
+			SlotLevel = level;
+		}
+
+		protected override void OnTarget( Mobile from, object targ )
+		{
+
+			if ( targ is BaseCreature )
+			{
+				m_Creature = (BaseCreature)targ;
+
+				TransformDifficulty = ShapeshiftGump.GetTransformDifficulty( m_Creature );
+
+				if ( TransformDifficulty != (int)ShapeshiftGump.TransformDifficulty.Impossible )
+				{
+					if ( TransformDifficulty <= SlotLevel )
+					{
+						m_Player.SendMessage( "The creature has been added to your transformation list" );
+						ShapeshiftGump.SaveTransformation( m_Player, m_Creature, SlotLevel, TransformDifficulty );
+					}
+					else
+						m_Player.SendMessage( "That creature is too difficult to transform to for that slot" );
+				}
+				else
+					m_Player.SendMessage( "That creature cannot be added to your transformation list. " );
+			}
+			else if ( targ is PlayerMobile )
+				m_Player.SendMessage( "You cannot add players to your transformation list." );
+			else
+				m_Player.SendMessage( "That cannot be added to your transformation list." );
+		}
+	}
+
+	public class TransformationInformation : Target
+	{
+		TeiravonMobile m_Player;
+		BaseCreature m_Creature;
+
+		public TransformationInformation( TeiravonMobile from ) : base( -1, false, TargetFlags.None )
+		{
+			m_Player = from;
+		}
+
+		protected override void OnTarget( Mobile from, object targ )
+		{
+
+
+			if (targ is BaseCreature )
+			{
+				m_Creature = (BaseCreature)targ;
+
+				int TransformDifficulty = ShapeshiftGump.GetTransformDifficulty( m_Creature );
+
+				if ( TransformDifficulty != (int)ShapeshiftGump.TransformDifficulty.Impossible )
+				{
+					if (TransformDifficulty + 1 < 5 )
+						m_Player.SendMessage( "That creature requires a level {0} slot or better", TransformDifficulty + 1 );
+					else
+						m_Player.SendMessage( "That creature requires a level 5 slot" );
+				}
+				else
+					m_Player.SendMessage( "You cannot shapeshift into that creature.");
+			}
+			else
+				m_Player.SendMessage( "That is not a creature." );
+		}
+	}
+
+}
+
+
+namespace Server.Scripts.Commands
+{
+	public class DruidCommands
+	{
+		#region Command Initializers
+		public static void Initialize()
+		{
+			Server.Commands.Register( "Shapeshift", AccessLevel.Player, new CommandEventHandler( Shapeshift_OnCommand ) );
+		}
+		#endregion
+
+		[Usage( "Shapeshift" )]
+		[Description( "Allows shapeshifters to take a form of another creature" )]
+		private static void Shapeshift_OnCommand( CommandEventArgs e )
+		{
+			TeiravonMobile m_Player = (TeiravonMobile)e.Mobile;
+
+			if ( !m_Player.HasFeat( TeiravonMobile.Feats.WildShape ) )
+				m_Player.SendMessage( Teiravon.Colors.FeatMessageColor, Teiravon.Messages.NoAbility );
+
+			else if ( m_Player.Mounted )
+				m_Player.SendMessage( "You can't do this while mounted." );
+
+			else if ( m_Player.IsShapeshifter() || m_Player.IsForester() )
+				m_Player.SendGump( new ShapeshiftGump( m_Player ) );
+			else
+				m_Player.SendMessage( "Only shapeshifters/foresters can do that. ");
+		}
+	}
+}

@@ -1,0 +1,587 @@
+using System;
+using System.Collections;
+using Server;
+using Server.Items;
+using Server.Mobiles;
+using Server.ContextMenus;
+using Server.Teiravon;
+
+namespace Teiravon.Quests
+{
+	public enum ClassGroup
+	{
+		None,
+		Fighter,
+		Cleric,
+		Mage,
+		Ranger,
+		Druid,
+		Barbarian,
+		Rogue,
+		Crafter
+	}
+	
+	public class TalkEntry : ContextMenuEntry
+	{
+		private TAVQuester m_Quester;
+
+		public TalkEntry( TAVQuester quester ) : base( quester.TalkNumber )
+		{
+			m_Quester = quester;
+		}
+
+		public override void OnClick()
+		{
+			Mobile from = Owner.From;
+
+			if ( from.CheckAlive() && from is PlayerMobile && m_Quester.CanTalkTo( (PlayerMobile)from ) )
+				m_Quester.OnTalk( (PlayerMobile)from, true );
+		}
+	}
+
+	[NoSortAttribute]
+	public class TAVQuester : BaseVendor
+	{
+		protected ArrayList m_SBInfos = new ArrayList();
+		protected override ArrayList SBInfos{ get { return m_SBInfos; } }
+		
+		public override bool IsActiveVendor{ get{ return false; } }
+		public override bool IsInvulnerable{ get{ return true; } }
+		public override bool ClickTitle{ get { return false; } }
+		public override bool CanTeach{ get{ return false; } }
+		
+		public virtual int TalkNumber{ get{ return 6146; } } // Talk
+
+		private bool m_CanRepeat;
+		private Hashtable CompletedList = new Hashtable();
+		private string[] m_QuestText = new string[5];
+		private Type[] m_QuestItem = new Type[5];
+		private int[] m_QuestAmt = new int[5];
+		private string m_QuestDescription;
+		private string m_QuestEnd;
+		private int m_GoldAmt = 0;
+		private int m_QuestExp = 0;
+		private TeiravonMobile.Class m_class = TeiravonMobile.Class.None;
+		private ClassGroup m_classgroup = ClassGroup.None;
+		private int m_level = 1;
+		private TeiravonMobile.Race m_race = TeiravonMobile.Race.None;
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public TeiravonMobile.Class AllowedClass
+		{
+			get{ return m_class; }
+			set{ m_class = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public ClassGroup AllowedGroup
+		{
+			get{ return m_classgroup; }
+			set{ m_classgroup = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int MinLevel
+		{
+			get{ return m_level; }
+			set{ m_level = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public TeiravonMobile.Race AllowedRace
+		{
+			get{ return m_race; }
+			set{ m_race = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool CanRepeat
+		{
+			get{ return m_CanRepeat; }
+			set{ m_CanRepeat = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int GoldAmt
+		{
+			get{ return m_GoldAmt; }
+			set{ m_GoldAmt = value;}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int QuestExp
+		{
+			get{ return m_QuestExp; }
+			set{ m_QuestExp = value;}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public string QuestDescription
+		{
+			get{ return m_QuestDescription; }
+			set{ m_QuestDescription = value;}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public string QuestEnd
+		{
+			get{ return m_QuestEnd; }
+			set{ m_QuestEnd = value;}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public string QuestText1
+		{
+			get{ return m_QuestText[0]; }
+			set{ m_QuestText[0] = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public Type QuestItem1
+		{
+			get{ return m_QuestItem[0]; }
+			set{ m_QuestItem[0] = value;}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int QuestAmt1
+		{
+			get{ return m_QuestAmt[0]; }
+			set{ m_QuestAmt[0] = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public string QuestText2
+		{
+			get{ return m_QuestText[1]; }
+			set{ m_QuestText[1] = value;}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public Type QuestItem2
+		{
+			get{ return m_QuestItem[1]; }
+			set{ m_QuestItem[1] = value;}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int QuestAmt2
+		{
+			get{ return m_QuestAmt[1]; }
+			set{ m_QuestAmt[1] = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public string QuestText3
+		{
+			get{ return m_QuestText[2]; }
+			set{ m_QuestText[2] = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public Type QuestItem3
+		{
+			get{ return m_QuestItem[2]; }
+			set{ m_QuestItem[2] = value;}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int QuestAmt3
+		{
+			get{ return m_QuestAmt[2]; }
+			set{ m_QuestAmt[2] = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public string QuestText4
+		{
+			get{ return m_QuestText[3]; }
+			set{ m_QuestText[3] = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public Type QuestItem4
+		{
+			get{ return m_QuestItem[3]; }
+			set{ m_QuestItem[3] = value;}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int QuestAmt4
+		{
+			get{ return m_QuestAmt[3]; }
+			set{ m_QuestAmt[3] = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public string QuestText5
+		{
+			get{ return m_QuestText[4]; }
+			set{ m_QuestText[4] = value;}
+		}
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public Type QuestItem5
+		{
+			get{ return m_QuestItem[4]; }
+			set{ m_QuestItem[4] = value;}
+		}
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int QuestAmt5
+		{
+			get{ return m_QuestAmt[4]; }
+			set{ m_QuestAmt[4] = value;}
+		}
+		
+		public override void InitSBInfo()
+		{
+		}
+
+		[Constructable]
+		public TAVQuester() : this( null )
+		{
+		}
+
+		public TAVQuester( string title ) : base( title )
+		{
+		}
+
+		public TAVQuester( Serial serial ) : base( serial )
+		{
+		}
+
+		public virtual void OnTalk( PlayerMobile player, bool contextMenu )
+		{
+			TeiravonMobile pm;
+			bool passcheck = true;
+				
+			if (player is TeiravonMobile)
+				pm = (TeiravonMobile)player;
+			else 
+				return;
+
+			if ((int)AllowedRace != (int)TeiravonMobile.Class.None || (int)AllowedClass != (int)ClassGroup.None || (int)AllowedGroup != (int)ClassGroup.None)
+			{
+				
+				if ((int)pm.PlayerClass != (int)AllowedClass && (int)AllowedClass != (int)TeiravonMobile.Class.None)
+					passcheck = false;
+					
+				if ((int)pm.PlayerRace != (int)AllowedRace && (int)AllowedRace != (int)TeiravonMobile.Race.None)
+					passcheck = false;
+				
+				if (((int)AllowedGroup == (int)ClassGroup.Fighter && !(pm.IsFighter() || pm.IsKensai() || pm.IsCavalier())) && (int)AllowedGroup != (int)ClassGroup.None )
+					passcheck = false;
+
+				if (((int)AllowedGroup == (int)ClassGroup.Cleric && !(pm.IsCleric() || pm.IsDarkCleric())) && (int)AllowedGroup != (int)ClassGroup.None )
+					passcheck = false;
+
+				if (((int)AllowedGroup == (int)ClassGroup.Mage && !(pm.IsMage())) && (int)AllowedGroup != (int)ClassGroup.None  )
+					passcheck = false;
+
+				if (((int)AllowedGroup == (int)ClassGroup.Ranger && !(pm.IsRanger() || pm.IsArcher())) && (int)AllowedGroup != (int)ClassGroup.None  )
+					passcheck = false;
+
+				if (((int)AllowedGroup == (int)ClassGroup.Druid && !(pm.IsForester() || pm.IsShapeshifter())) && (int)AllowedGroup != (int)ClassGroup.None  )
+					passcheck = false;
+
+				if (((int)AllowedGroup == (int)ClassGroup.Barbarian && !(pm.IsBerserker() || pm.IsDragoon())) && (int)AllowedGroup != (int)ClassGroup.None  )
+					passcheck = false;
+
+				if (((int)AllowedGroup == (int)ClassGroup.Rogue && !(pm.IsThief() || pm.IsAssassin())) && (int)AllowedGroup != (int)ClassGroup.None  )
+					passcheck = false;
+
+				if (((int)AllowedGroup == (int)ClassGroup.Crafter && !(pm.IsCrafter())) && (int)AllowedGroup != (int)ClassGroup.None  )
+					passcheck = false;
+
+				if (!passcheck)
+				{
+					this.SayTo(pm, "I have nothing for you at this time");
+					return;
+				}
+			}
+			
+			if (pm.PlayerLevel < MinLevel)
+			{
+				this.SayTo(pm, "I have nothing for you at this time");
+				return;
+			}
+				
+			
+			if (QuestText1 == null || QuestItem1 == null)
+				return;
+			
+			if (!this.InLOS(player))
+				return;
+			
+			if (!CompletedList.Contains(player))
+				CompletedList.Add(player, -1);
+			
+			if ((int)CompletedList[player] > 5 && CanRepeat)
+				CompletedList[player] = -1;
+			
+			switch((int)CompletedList[player])
+			{
+				case -1:
+					this.SayTo(player, QuestDescription);
+					CompletedList[player] = 0;
+					break;
+					
+				case 0:
+					this.SayTo(player, QuestText1);
+					CompletedList[player] = 1;
+					break;
+					
+				case 1:
+					if (FindQuestItem(QuestItem1, QuestAmt1, player))
+					{
+						if (QuestText2 == null || QuestItem2 == null)
+							goto case 5;
+						this.SayTo(player, QuestText2);
+						CompletedList[player] = 2;
+						
+					}
+					else
+					{
+						this.SayTo(player, QuestText1);
+					}
+					break;
+					
+				case 2:
+					if (FindQuestItem(QuestItem2, QuestAmt2, player))
+					{
+						if (QuestText3 == null || QuestItem3 == null)
+							goto case 5;
+						this.SayTo(player, QuestText3);
+						CompletedList[player] = 3;
+					}
+					else
+					{
+						this.SayTo(player, QuestText2);
+					}
+					break;
+
+				case 3:
+					if (FindQuestItem(QuestItem3, QuestAmt3, player))
+					{
+						if (QuestText4 == null || QuestItem4 == null)
+							goto case 5;
+						this.SayTo(player, QuestText4);
+						CompletedList[player] = 4;
+					}
+					else
+					{
+						this.SayTo(player, QuestText3);
+					}
+					break;
+
+				case 4:
+					if (FindQuestItem(QuestItem4, QuestAmt4, player))
+					{
+						if (QuestText5 == null || QuestItem5 == null)
+							goto case 5;
+						this.SayTo(player, QuestText5);
+						CompletedList[player] = 5;
+					}
+					else
+					{
+						this.SayTo(player, QuestText4);
+					}
+					break;
+
+				case 5:
+					if (QuestText5 == null || QuestItem5 == null)
+					{
+						this.SayTo(player, QuestEnd);
+						CompletedList[player] = 6;
+						EndQuest(player);
+					}
+					else if (FindQuestItem(QuestItem5, QuestAmt5, player))
+					{
+						this.SayTo(player, QuestEnd);
+						CompletedList[player] = 6;
+						EndQuest(player);
+					}
+					else
+					{
+						this.SayTo(player, QuestText5);
+					}
+					break;
+
+				default:
+					this.SayTo(player, "I have no need of your services at this time.");
+					break;
+
+			}
+			
+		}
+
+		public virtual bool FindQuestItem (Type item, int amt, PlayerMobile pm)
+		{
+			if (pm.Backpack == null)
+			{
+				pm.SendMessage("Error:  You do not have a backpack");
+				return false;
+			}
+			
+//			Type itemtype = item.GetType();
+			
+			if (pm.Backpack.GetAmount( item ) >= amt)
+			{
+				pm.Backpack.ConsumeTotal( item, amt );
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		
+		public virtual void EndQuest(PlayerMobile pm)
+		{
+			TeiravonMobile tm = (TeiravonMobile)pm;
+			tm.PlayerExp += QuestExp;
+			pm.SendMessage("You have gained {0} experience.", QuestExp);
+			pm.AddToBackpack( new Gold( GoldAmt ) );
+			if (this.Backpack != null)
+			{
+				if (this.Backpack.Items.Count > 0)
+				{
+					pm.AddToBackpack( (Item)this.Backpack.Items[Utility.Random(this.Backpack.Items.Count)]);
+				}
+			}
+		}
+		
+		public virtual bool CanTalkTo( PlayerMobile to )
+		{
+			return true;
+		}
+
+		public virtual int GetAutoTalkRange( PlayerMobile m )
+		{
+			return -1;
+		}
+
+		public override bool CanBeDamaged()
+		{
+			return false;
+		}
+
+		protected Item SetHue( Item item, int hue )
+		{
+			item.Hue = hue;
+			return item;
+		}
+
+		public override void AddCustomContextEntries( Mobile from, ArrayList list )
+		{
+			base.AddCustomContextEntries( from, list );
+
+			if ( from.Alive && from is PlayerMobile && TalkNumber > 0 && CanTalkTo( (PlayerMobile)from ) )
+				list.Add( new TalkEntry( this ) );
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 1 ); // version
+
+			writer.Write( (bool)m_CanRepeat );
+			for (int i = 0; i < 5; i++)
+			{
+				writer.Write( m_QuestText[i] );
+				if (m_QuestItem[i] != null)
+					writer.Write( m_QuestItem[i].ToString() );
+				else
+					writer.Write( "" );
+				writer.Write( (int)m_QuestAmt[i] );
+			}
+			writer.Write( m_QuestDescription );
+			writer.Write( m_QuestEnd );
+			writer.Write( (int)m_GoldAmt );
+			writer.Write( (int)m_QuestExp );
+			writer.Write( (int)CompletedList.Count );
+			foreach ( PlayerMobile pm in CompletedList.Keys )
+			{
+				writer.Write( (Mobile)pm );
+				writer.Write( (int)CompletedList[pm] );
+			}
+			writer.Write( (int)m_class );
+			writer.Write( (int)m_classgroup );
+			writer.Write( (int)m_level );
+			writer.Write( (int)m_race );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+			m_CanRepeat = reader.ReadBool();
+			String tempstring;
+			String setstring;
+			int strind = 0;
+			for (int i = 0; i < 5; i++)
+			{
+				setstring = "";
+				m_QuestText[i] = reader.ReadString();
+				tempstring = reader.ReadString();
+				
+				for (int z = 0; z < tempstring.Length; z++)
+				{
+					if (String.Compare(tempstring.Substring(z,1),".") == 0)
+						strind = z;
+				}
+				
+				for (int z = strind + 1; z < tempstring.Length; z++)
+					setstring = setstring + tempstring[z];
+				
+				m_QuestItem[i] = ScriptCompiler.FindTypeByName(setstring);
+				m_QuestAmt[i] = reader.ReadInt();
+			}
+			m_QuestDescription = reader.ReadString();
+			m_QuestEnd = reader.ReadString();
+			m_GoldAmt = reader.ReadInt();
+			m_QuestExp = reader.ReadInt();
+			int hashcnt = reader.ReadInt();
+			if (hashcnt > 0)
+			{
+				PlayerMobile pm;
+				int qn;
+				for (int ii = 0; ii < hashcnt; ii++)
+				{
+					try
+					{
+						pm = (PlayerMobile)reader.ReadMobile();
+						qn = reader.ReadInt();
+						CompletedList.Add(pm, qn);
+					}
+					catch
+					{
+						Console.WriteLine("Playermobile removed from quester");
+					}
+				}
+			}
+			else
+			{
+				CompletedList = new Hashtable();
+			}
+			
+			if (version > 0)
+			{
+				m_class = (TeiravonMobile.Class)reader.ReadInt();
+				m_classgroup = (ClassGroup)reader.ReadInt();
+				m_level = reader.ReadInt();
+				m_race = (TeiravonMobile.Race)reader.ReadInt();
+			}
+			else
+			{
+				m_class = TeiravonMobile.Class.None;
+				m_classgroup = ClassGroup.None;
+				m_level = 1;
+				m_race = TeiravonMobile.Race.None;
+			}
+		}
+	}
+}

@@ -1,0 +1,111 @@
+using System;
+using Server;
+using Server.Mobiles;
+using Server.Targeting;
+
+namespace Server.Items
+{
+	public class Caltrops : Item
+	{
+		public override bool OnMoveOver( Mobile m )
+		{
+			if ( m.LegsArmor != null && m.LegsArmor is PlateLegs )
+				m.SendMessage( "The caltrops have no effect on you..." );
+			else if ( m.Mounted )
+				if ( Utility.RandomBool() )
+				{
+					BaseMount.Dismount( m );
+					if (m is TeiravonMobile)
+					{
+						TeiravonMobile tm = (TeiravonMobile)m;
+						tm.Dismounted();
+					}
+					
+					m.Emote( "*You see {0} is thrown from {1} mount!*", m.Name, m.Female ? "her" : "his" );
+					m.SendMessage( "Your mount stumbles over the caltrops!" );
+					
+					m.Freeze( TimeSpan.FromSeconds( 3.0 ) );
+				} else if ( Utility.RandomBool() ) {
+					m.Emote( "*You see {0}'s mount stumble, but keep its footing.*", m.Name );
+					
+					m.Freeze( TimeSpan.FromSeconds( 1.0 ) );
+				} else {
+					m.Emote( "The caltrops have no effect on your mount." );
+				}
+			else {
+				if ( Utility.RandomBool() )
+					m.Freeze( TimeSpan.FromSeconds( 1.0 ) );
+				
+				m.Stam = (int)(m.Stam * .25);
+				
+				m.Emote( "*You see {0} stumble over the caltrops!*", m.Name );
+			}
+			
+			if ( Utility.RandomBool() )
+				Delete();
+			
+			return base.OnMoveOver( m );
+		}
+		
+		public override void OnDoubleClick( Mobile from )
+		{
+//			if ( this.Parent != null || this.Parent != from.Backpack )
+			if (!(IsChildOf(from.Backpack)))
+			from.SendMessage( "The caltrops must be in your backpack to use..." );
+			else
+				from.Target = new InternalTarget( this );
+		}
+		
+		public override bool Decays { get { return true; } }
+		
+		[Constructable]
+		public Caltrops() : base( 3146 )
+		{
+			ItemID = Utility.RandomBool() ? 3146 : 3142;
+			Name = "Caltrops";
+		}
+		
+		public Caltrops( Serial serial ) : base( serial )
+		{
+		}
+		
+		public override void Serialize(GenericWriter writer)
+		{
+			base.Serialize (writer);
+		}
+		
+		public override void Deserialize(GenericReader reader)
+		{
+			base.Deserialize (reader);
+		}
+		
+		private class InternalTarget : Target
+		{
+			private Caltrops m_Caltrops;
+			
+			public InternalTarget( Caltrops caltrops ) : base( 3, true, TargetFlags.None )
+			{
+				CheckLOS = true;
+				m_Caltrops = caltrops;
+			}
+			
+			protected override void OnTarget( Mobile from, object targeted )
+			{
+				if ( targeted is LandTarget )
+					m_Caltrops.MoveToWorld( ((LandTarget)targeted).Location, from.Map );
+				else if ( targeted is StaticTarget )
+					m_Caltrops.MoveToWorld( ((StaticTarget)targeted).Location, from.Map );
+				else if ( targeted is Item )
+					m_Caltrops.MoveToWorld( ((Item)targeted).Location, from.Map );
+				else
+					from.SendMessage( "You must target the ground!"  );
+				
+				if ( m_Caltrops.Parent == null )
+				{
+					m_Caltrops.Movable = false;
+					from.SendMessage( "You toss the caltrops on the ground." );
+				}
+			}
+		}
+	}
+}

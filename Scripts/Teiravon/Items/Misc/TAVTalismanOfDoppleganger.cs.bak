@@ -1,0 +1,441 @@
+using System;
+using System.Collections;
+using Server;
+using Server.Accounting;
+using Server.Items;
+using Server.Mobiles;
+using Server.Scripts.Commands;
+using Server.Targets;
+using Server.Targeting;
+using Server.Gumps;
+
+	
+namespace Server.Items
+{
+	
+	public class DoppleItem
+	{
+		private string m_DoppleName;
+		private int m_DoppleBody;
+		private int m_DoppleHue;
+
+		public string DoppleName{ get{ return m_DoppleName; } }
+		public int DoppleBody{ get{ return m_DoppleBody; } }
+		public int DoppleHue{ get{ return m_DoppleHue; } }
+
+
+		public DoppleItem( string name, int body, int hue )
+		{
+			m_DoppleName = name;
+			m_DoppleBody = body;
+			m_DoppleHue = hue;
+		}
+	}
+
+	public class TalismanOfDoppleganger : Item
+	{
+		private bool bound;
+		private bool m_self;
+		private string m_playername;
+		private string m_playertitle;
+		private string m_playerprofile;
+		private int m_playerhue;
+		private int m_playerhairhue;
+		private Hashtable m_Dopples;
+		
+		public string playername{ get{ return m_playername; } set{ m_playername = value; } }
+		public string playertitle{ get{ return m_playertitle; } set{ m_playertitle = value; } }
+		public string playerprofile{ get{ return m_playerprofile; } set{ m_playerprofile = value; } }
+		public int playerhue{ get{ return m_playerhue; } set{ m_playerhue = value; } }
+		public Hashtable Dopples{ get{ return m_Dopples; } set{ m_Dopples = value; } }
+		public bool self{ get{ return m_self; } set{ m_self = value; } }
+		public int playerhairhue{ get{ return m_playerhairhue; } set{ m_playerhairhue = value; } }
+		
+		
+		[Constructable]
+		public TalismanOfDoppleganger() : base( 12122 )
+		{
+			Weight = 1.0;
+			LootType = LootType.Blessed;
+			Name = "Talisman of the Doppleganger";
+			bound = false;
+			Dopples = new Hashtable();
+			m_self = true;
+		}
+	
+		public TalismanOfDoppleganger( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void OnDoubleClick( Mobile from )
+		{
+			if (!bound)
+			{
+				if (from is TeiravonMobile)
+				{
+					TeiravonMobile tm = (TeiravonMobile)from;
+					if (tm.OBody != 0)
+					{
+						tm.SendMessage("You must be in your natural form to use this");
+						return;
+					}
+					else
+					{
+						playername = from.Name;
+						playertitle = from.Title;
+						playerprofile = from.Profile;
+						if (from.Hair != null)
+							playerhue = from.Hue;
+						playerhairhue = from.Hair.Hue;
+						bound = true;
+						from.SendMessage("The talisman is now bound to you");
+						return;
+					}
+				}
+			}
+			
+			from.Target = new DoppleTarget(this);
+		}
+		
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 0 ); // version
+			writer.Write( (bool)bound );
+			writer.Write( (string)m_playername );
+			writer.Write( (string)m_playertitle );
+			writer.Write( (string)m_playerprofile );
+			writer.Write( (int)m_playerhue );
+			writer.Write( (bool)m_self );
+			writer.Write( (int)m_playerhairhue );
+			writer.Write( (int)m_Dopples.Count );
+			foreach ( DoppleItem di in m_Dopples.Values )
+			{
+				writer.Write( (string) di.DoppleName );
+				writer.Write( (int) di.DoppleBody );
+				writer.Write( (int) di.DoppleHue );
+			}
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+			int version = reader.ReadInt();
+			bound = reader.ReadBool();
+			m_playername = reader.ReadString();
+			m_playertitle = reader.ReadString();
+			m_playerprofile = reader.ReadString();
+			m_playerhue = reader.ReadInt();
+			m_self = reader.ReadBool();
+			m_playerhairhue = reader.ReadInt();
+			int count = reader.ReadInt();
+			DoppleItem di;
+			string tempstring;
+			int tempint1;
+			int tempint2;
+			m_Dopples = new Hashtable();
+			for (int i = 0; i < count; i++)
+			{
+				tempstring = reader.ReadString();
+				tempint1 = reader.ReadInt();
+				tempint2 = reader.ReadInt();
+				di = new DoppleItem(tempstring, tempint1, tempint2);
+				m_Dopples[i] = di;
+			}
+		}
+		
+		public class DoppleTarget : Target
+		{
+			private Mobile m_player;
+			private TalismanOfDoppleganger talisman;
+		
+			public DoppleTarget(TalismanOfDoppleganger item) : base( -1, false, TargetFlags.None )
+			{
+				talisman = item;
+			}
+		
+			protected override void OnTarget( Mobile from, object o )
+			{
+				m_player = from;
+				if (!(o is Mobile) || (o is PlayerMobile && (PlayerMobile)o != m_player))
+				{
+					m_player.SendMessage("You can only target creatures or yourself with this");
+					return;
+				}
+
+				if (o is Mobile && !(o is PlayerMobile))
+				{
+					Mobile mob = (Mobile)o;
+					DoppleItem di = new DoppleItem( mob.Name, mob.Body, mob.Hue);
+					int cnt = talisman.Dopples.Count;
+					talisman.Dopples[cnt] = di;
+					m_player.SendMessage("You have added {0}", mob.Name);
+				}
+				else
+				{
+					m_player.SendGump(new DoppleGump(m_player, talisman));
+				}
+					
+			}
+		}
+		
+		public class DoppleGump : Gump
+		{
+			TeiravonMobile tm_player;
+			TalismanOfDoppleganger talisman;
+		
+			public DoppleGump(Mobile from, TalismanOfDoppleganger item): base( 0, 0 )
+			{
+				tm_player = (TeiravonMobile)from;
+				talisman = item;
+			
+				this.Closable=true;
+				this.Disposable=true;
+				this.Dragable=true;
+				this.Resizable=false;
+			
+				this.AddPage(0);
+				this.AddBackground(0, 0, 400, 400, 9250);
+				this.AddLabel(95, 20, 0, @"Talisman of the Doppleganger");
+
+				this.AddPage(1);
+				this.AddLabel(45, 125, 0, @"Races");
+				this.AddLabel(155, 125, 0, @"Creatures");
+				this.AddLabel(300, 125, 0, @"Self");
+				this.AddLabel(125, 265, 0, @"Zero Fame/Karma");
+				this.AddButton(45, 155, 4017, 4019, (int)Buttons.RacesPageButton, GumpButtonType.Page, 2);
+				this.AddButton(170, 155, 4017, 4019, (int)Buttons.CreaturesPageButton, GumpButtonType.Page, 3);
+				this.AddButton(300, 155, 4017, 4019, (int)Buttons.SelfButton, GumpButtonType.Reply, 0);
+				this.AddButton(170, 300, 4017, 4019, (int)Buttons.FameKarmaButton, GumpButtonType.Reply, 0);
+			
+				this.AddPage(2);
+				this.AddBackground(85, 105, 220, 40, 9250);
+				this.AddTextEntry(105, 115, 180, 20, 0, (int)Buttons.NameTextEntry, @"");
+				this.AddLabel(175, 80, 0, @"Name:");
+				this.AddLabel(70, 175, 0, @"Human");
+				this.AddLabel(70, 335, 0, @"Dwarf");
+				this.AddLabel(70, 215, 0, @"Elf");
+				this.AddLabel(70, 255, 0, @"Drow");
+				this.AddLabel(70, 295, 0, @"Orc");
+				this.AddButton(150, 175, 4017, 4019, (int)Buttons.HumanMaleButton, GumpButtonType.Reply, 0);
+				this.AddButton(150, 215, 4017, 4019, (int)Buttons.ElfMaleButton, GumpButtonType.Reply, 0);
+				this.AddButton(150, 255, 4017, 4019, (int)Buttons.DrowMaleButton, GumpButtonType.Reply, 0);
+				this.AddButton(150, 295, 4017, 4019, (int)Buttons.OrcMaleButton, GumpButtonType.Reply, 0);
+				this.AddButton(150, 335, 4017, 4019, (int)Buttons.DwarfMaleButton, GumpButtonType.Reply, 0);
+				this.AddLabel(150, 150, 0, @"Male");
+				this.AddButton(220, 175, 4017, 4019, (int)Buttons.HumanFemaleButton, GumpButtonType.Reply, 0);
+				this.AddButton(220, 215, 4017, 4019, (int)Buttons.ElfFemaleButton, GumpButtonType.Reply, 0);
+				this.AddButton(220, 255, 4017, 4019, (int)Buttons.DrowFemaleButton, GumpButtonType.Reply, 0);
+				this.AddButton(220, 295, 4017, 4019, (int)Buttons.OrcFemaleButton, GumpButtonType.Reply, 0);
+				this.AddButton(220, 335, 4017, 4019, (int)Buttons.DwarfFemaleButton, GumpButtonType.Reply, 0);
+				this.AddLabel(215, 150, 0, @"Female");
+			
+				this.AddPage(3);
+				int yval = 80;
+				int yinc = 0;
+				int cnt = 0;
+				int pagecount = 3;
+				foreach ( DoppleItem di in talisman.Dopples.Values )
+				{
+					this.AddButton(90, yval + (yinc * 25), 4017, 4019, 100 + cnt, GumpButtonType.Reply, 0);
+					this.AddLabel(140, yval + (yinc * 25), 0, @di.DoppleName);
+					cnt++;
+					yinc++;
+					if (yinc == 10)
+					{
+						pagecount++;
+						yinc = 0;
+						if ((double)(talisman.Dopples.Count/10) >= pagecount - 3 && (talisman.Dopples.Count%10 != 0 || pagecount > 3))
+						{
+							this.AddButton(350, 360, 4005, 4007, (int)Buttons.CreaturePageForward, GumpButtonType.Page, pagecount);
+							this.AddPage(pagecount);
+						}
+						if (pagecount > 3)
+							this.AddButton(20, 360, 4014, 4016, (int)Buttons.CreaturePageBack, GumpButtonType.Page, pagecount - 1);
+					}
+				
+				}
+
+			}
+			
+		public override void OnResponse( Server.Network.NetState sender, RelayInfo info )
+		{
+			if (info.ButtonID == (int)Buttons.SelfButton)
+			{
+				if (talisman.self)
+				{
+					tm_player.SendMessage("You are already yourself");
+				}
+				else
+				{
+					tm_player.Name = talisman.playername;
+					tm_player.OBody = 0;
+					tm_player.Hue = talisman.playerhue;
+					if (tm_player.Title == "the Dwarf")
+					{
+						Beard dbd = tm_player.FindItemOnLayer(Layer.FacialHair) as Beard;
+						if (dbd != null)
+							dbd.Delete();
+					}
+					if (tm_player.Title == "the Orc")
+					{
+						OrcFace dbd = tm_player.FindItemOnLayer(Layer.FacialHair) as OrcFace;
+						if (dbd != null)
+							dbd.Delete();
+						tm_player.EquipItem( new ShortHair(talisman.playerhairhue));
+					}
+					tm_player.Title = talisman.playertitle;
+					tm_player.Profile = talisman.playerprofile;
+					tm_player.Hair.Hue = talisman.playerhairhue;
+					talisman.self = true;
+					tm_player.SendMessage("You are yourself once again");
+				}
+			}
+			
+			if (info.ButtonID == (int)Buttons.FameKarmaButton)
+			{
+				tm_player.Fame = 0;
+				tm_player.Karma = 0;
+				tm_player.SendMessage("Fame and Karma set to 0");
+			}
+			
+			if (info.ButtonID >= (int)Buttons.HumanMaleButton && info.ButtonID <= (int)Buttons.DwarfFemaleButton)
+			{
+				if (!talisman.self)
+				{
+					tm_player.SendMessage("You can only change forms while yourself");
+				}
+				else
+				{
+					TextRelay relay = info.GetTextEntry( (int)Buttons.NameTextEntry );
+					tm_player.SendMessage("Text Entry: {0}", relay.Text.Trim());
+					string textname = ( relay == null ? tm_player.Name : relay.Text.Trim() );
+					tm_player.Name = textname;
+					tm_player.Profile = "";
+					talisman.self = false;
+					
+					switch(info.ButtonID)
+					{
+						case (int)Buttons.HumanMaleButton:
+							tm_player.OBody = 0x190;
+							tm_player.Hue = 1004;
+							tm_player.Hair.Hue = 642;
+							tm_player.Title = "the Human";
+							break;
+						case (int)Buttons.ElfMaleButton:
+							tm_player.OBody = 0x190;
+							tm_player.Hue = 1118;
+							tm_player.Hair.Hue = 2648;
+							tm_player.Title = "the Elf";
+							break;
+						case (int)Buttons.DrowMaleButton:
+							tm_player.OBody = 0x190;
+							tm_player.Hue = 1109;
+							tm_player.Hair.Hue = 1149;
+							tm_player.Title = "the Drow";
+							break;
+						case (int)Buttons.OrcMaleButton:
+							tm_player.OBody = 0x190;
+							tm_player.Hue = 2414;
+							tm_player.Hair.Hue = 1109;
+							tm_player.Title = "the Orc";
+							if ( tm_player.Hair != null )
+								(tm_player.Hair).Delete();
+							if ( tm_player.Beard != null )
+								(tm_player.Beard).Delete();
+							tm_player.EquipItem( new OrcFace( tm_player ) );
+							break;
+						case (int)Buttons.DwarfMaleButton:
+							tm_player.OBody = 0x190;
+							tm_player.Hue = 1002;
+							tm_player.Hair.Hue = 2402;
+							tm_player.Title = "the Dwarf";
+							if ( tm_player.Beard != null )
+								(tm_player.Beard).Delete();
+							tm_player.EquipItem( new LongBeard(2402));
+							break;
+						case (int)Buttons.HumanFemaleButton:
+							tm_player.OBody = 0x191;
+							tm_player.Hue = 1004;
+							tm_player.Hair.Hue = 642;
+							tm_player.Title = "the Human";
+							break;
+						case (int)Buttons.ElfFemaleButton:
+							tm_player.OBody = 0x191;
+							tm_player.Hue = 1118;
+							tm_player.Hair.Hue = 2648;
+							tm_player.Title = "the Elf";
+							break;
+						case (int)Buttons.DrowFemaleButton:
+							tm_player.OBody = 0x191;
+							tm_player.Hue = 1109;
+							tm_player.Hair.Hue = 1149;
+							tm_player.Title = "the Drow";
+							break;
+						case (int)Buttons.OrcFemaleButton:
+							tm_player.OBody = 0x191;
+							tm_player.Hue = 2414;
+							tm_player.Hair.Hue = 1109;
+							tm_player.Title = "the Orc";
+							if ( tm_player.Hair != null )
+								(tm_player.Hair).Delete();
+							if ( tm_player.Beard != null )
+								(tm_player.Beard).Delete();
+							tm_player.EquipItem( new OrcFace( tm_player ) );
+							break;
+						case (int)Buttons.DwarfFemaleButton:
+							tm_player.OBody = 0x191;
+							tm_player.Hue = 1002;
+							tm_player.Hair.Hue = 2402;
+							tm_player.Title = "the Dwarf";
+							break;
+					}
+				}
+			}
+
+			if (info.ButtonID > 99)
+			{
+				if (talisman.self)
+				{
+					int dopplekey = info.ButtonID - 100;
+					DoppleItem di = (DoppleItem)talisman.Dopples[dopplekey];
+					tm_player.OBody = di.DoppleBody;
+					tm_player.Name = di.DoppleName;
+					tm_player.Hue = di.DoppleHue;
+					talisman.self = false;
+				}
+				else
+				{
+					tm_player.SendMessage("You can only change forms while yourself");
+				}
+			}
+			
+		}
+		
+			public enum Buttons
+			{
+				RacesPageButton,
+				CreaturesPageButton,
+				SelfButton,
+				FameKarmaButton,
+				NameTextEntry,
+				HumanMaleButton,
+				ElfMaleButton,
+				DrowMaleButton,
+				OrcMaleButton,
+				DwarfMaleButton,
+				HumanFemaleButton,
+				ElfFemaleButton,
+				DrowFemaleButton,
+				OrcFemaleButton,
+				DwarfFemaleButton,
+				CreaturePageForward,
+				CreaturePageBack,
+			}
+
+		}
+	
+	}
+
+}

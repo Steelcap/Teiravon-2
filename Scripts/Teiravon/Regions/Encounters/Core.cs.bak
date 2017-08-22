@@ -1,0 +1,576 @@
+using System;
+using System.Collections;
+using Server;
+using Server.Items;
+using Server.Mobiles;
+using Server.Targeting;
+using Server.Regions;
+using Server.Teiravon;
+using ESI = Teiravon.Encounters.EncounterSpawnerInfo;
+
+namespace Teiravon.Encounters
+{
+	#region Encounter Info
+	public class EncounterSpawnerInfo
+	{
+		public static ArrayList EasyForest = new ArrayList();
+		public static ArrayList EasyForestNight = new ArrayList();
+		public static ArrayList MediumForest = new ArrayList();
+		public static ArrayList MediumForestNight = new ArrayList();
+		public static ArrayList HardForest = new ArrayList();
+		public static ArrayList HardForestNight = new ArrayList();
+
+		public static ArrayList EasyPlains = new ArrayList();
+		public static ArrayList EasyPlainsNight = new ArrayList();
+		public static ArrayList MediumPlains = new ArrayList();
+		public static ArrayList MediumPlainsNight = new ArrayList();
+		public static ArrayList HardPlains = new ArrayList();
+		public static ArrayList HardPlainsNight = new ArrayList();
+		
+		public static ArrayList MediumDesert = new ArrayList();
+		public static ArrayList MediumDesertNight = new ArrayList();
+		public static ArrayList HardDesert = new ArrayList();
+		public static ArrayList HardDesertNight = new ArrayList();
+		
+		public static ArrayList Swamp = new ArrayList();
+		public static ArrayList SwampNight = new ArrayList();
+		
+		public static ArrayList Gorge = new ArrayList();
+		public static ArrayList GorgeNight = new ArrayList();
+		
+		public static void Initialize()
+		{
+			#region Forests
+			EasyForest.Add( new ESI( new string[] { "Bird", "Eagle" }, "You notice several birds in the brush...", 3, 5, 7, 15 ) );
+			EasyForest.Add( new ESI( new string[] { "BlackBear", "BrownBear" }, "You notice a pack of bears go by.", 2, 3, 7, 15 ) );
+			EasyForest.Add( new ESI( new string[] { "GreatHart", "Hind" }, "You notice a small group of deer go by.", 2, 4, 7, 15 ) );
+			EasyForest.Add( new ESI( new string[] { "Rabbit", "Bird", "JackRabbit", "Rat", "Panther", "TimberWolf" }, "Several forest creatures scurry by...", 2, 5, 7, 15 ) );
+			
+			EasyForestNight.Add( new ESI( new string[] { "Bird", "Eagle" }, "You notice several birds in the brush...", 3, 5, 7, 15 ) );
+			EasyForestNight.Add( new ESI( new string[] { "GreatHart", "Hind" }, "You notice a small group of deer go by.", 3, 5, 7, 15 ) );
+			EasyForestNight.Add( new ESI( new string[] { "Cougar", "Panther" }, "A pack of wild cats go by.", 3, 5, 7, 15 ) );
+			EasyForestNight.Add( new ESI( new string[] { "GrizzlyBear" }, "You notice a pack of bears go by.", 3, 5, 7, 15 ) );
+			EasyForestNight.Add( new ESI( new string[] { "Rabbit", "Bird", "JackRabbit", "Rat", "Panther", "TimberWolf", "DireWolf", "GreyWolf" }, "Several forest creatures scurry by...", 3, 5, 7, 15 ) );
+			EasyForestNight.Add( new ESI( new string[] { "GiantSpider" }, "You've been ambushed by giant spiders!", 2, 4, 5, 10 ) );
+			EasyForestNight.Add( new ESI( new string[] { "Zombie", "Skeleton", "GiantSpider" }, "You stumble into the path of the undead!", 2, 5, 7, 15 ) );
+			
+			MediumForest.Add( new ESI( new string[] { "Bird", "Eagle" }, "You notice several birds in the brush...", 3, 5, 7, 15 ) );
+			MediumForest.Add( new ESI( new string[] { "GreatHart", "Hind" }, "You notice a small group of deer go by.", 3, 5, 7, 15 ) );
+			MediumForest.Add( new ESI( new string[] { "Cougar", "Panther" }, "A pack of wild cats go by.", 3, 5, 7, 15 ) );
+			MediumForest.Add( new ESI( new string[] { "GrizzlyBear" }, "You notice a pack of bears go by.", 3, 5, 7, 15 ) );
+			MediumForest.Add( new ESI( new string[] { "Rabbit", "Bird", "JackRabbit", "Rat", "Panther", "TimberWolf", "DireWolf", "GreyWolf" }, "Several forest creatures scurry by...", 3, 5, 7, 15 ) );
+			MediumForest.Add( new ESI( new string[] { "GiantSpider" }, "You've been ambushed by giant spiders!", 2, 4, 5, 10 ) );
+			MediumForest.Add( new ESI( new string[] { "Brigand", "EvilWanderingHealer" }, "You've been ambushed by bandits!", 3, 5, 5, 10 ) );
+			MediumForest.Add( new ESI( new string[] { "Horse" }, "You see a horse up ahead..", 1, 1, 7, 15 ) );
+			MediumForest.Add( new ESI( new string[] { "Treefellow", "Reaper" }, "The forest comes alive!", 2, 4, 7, 15 ) );
+			MediumForest.Add( new ESI( new string[] { "Ratman", "RatmanArcher" }, "Ratmen jump out of the trees!", 2, 4, 7, 15 ) );
+			MediumForest.Add( new ESI( new string[] { "Ratman", "RatmanArcher" }, "A Ratmen hunting party jumps out of the trees!", 5, 7, 10, 15 ) );
+			MediumForest.Add( new ESI( new string[] { "Harpy", "Troll" }, "You discover a troll and its allies!", 2, 4, 7, 15 ) );
+			MediumForest.Add( new ESI( new string[] { "EvilMage" }, "Your skin tingles with energy...", 1, 2, 7, 15 ) );
+
+			MediumForestNight.Add( new ESI( new string[] { "Bird", "Eagle" }, "You notice several birds in the brush...", 3, 5, 7, 15 ) );
+			MediumForestNight.Add( new ESI( new string[] { "GreatHart", "Hind" }, "You notice a small group of deer go by.", 3, 5, 7, 15 ) );
+			MediumForestNight.Add( new ESI( new string[] { "Cougar", "Panther" }, "A pack of wild cats go by.", 3, 5, 7, 15 ) );
+			MediumForestNight.Add( new ESI( new string[] { "GrizzlyBear" }, "You notice a pack of bears go by.", 3, 5, 7, 15 ) );
+			MediumForestNight.Add( new ESI( new string[] { "TimberWolf", "DireWolf", "GreyWolf" }, "A pack of wolves are fleeing something...", 3, 5, 7, 15 ) );
+			MediumForestNight.Add( new ESI( new string[] { "GiantSpider", "GiantBlackWidow" }, "You've been ambushed by giant spiders!", 2, 4, 5, 10 ) );
+			MediumForestNight.Add( new ESI( new string[] { "Brigand", "Brigand", "Brigand", "EvilWanderingHealer" }, "You've been ambushed by bandits!", 4, 6, 5, 10 ) );
+			MediumForestNight.Add( new ESI( new string[] { "Treefellow", "Reaper", "Corpser", "WhippingVine" }, "The forest comes alive!", 2, 4, 7, 15 ) );
+			MediumForestNight.Add( new ESI( new string[] { "Ratman", "RatmanArcher", "RatmanMage" }, "Ratmen jump out of the trees!", 2, 4, 7, 15 ) );
+			MediumForestNight.Add( new ESI( new string[] { "Ratman", "RatmanArcher", "RatmanMage" }, "A Ratmen hunting party jumps out of the trees!", 5, 7, 10, 15 ) );
+			MediumForestNight.Add( new ESI( new string[] { "Harpy", "Troll" }, "You discover a troll and its allies!", 2, 4, 7, 15 ) );
+			MediumForestNight.Add( new ESI( new string[] { "Troll" }, "You discover a pair of trolls looking for dinner!", 2, 2, 7, 15 ) );
+			MediumForestNight.Add( new ESI( new string[] { "EvilMage" }, "Your skin tingles with energy...", 1, 2, 7, 15 ) );
+			MediumForestNight.Add( new ESI( new string[] { "GiantSerpent" }, "A giant snake descends from a tree!", 1, 1, 5, 10 ) );
+			MediumForestNight.Add( new ESI( new string[] { "Spectre", "Wraith", "Ghoul", "RottingCorpse" }, "The scent of death overpowers you...", 2, 5, 5, 10 ) );
+
+			HardForest.Add( new ESI( new string[] { "Bird", "Eagle" }, "You notice several birds in the brush...", 3, 5, 7, 15 ) );
+			HardForest.Add( new ESI( new string[] { "GrizzlyBear" }, "You notice a pack of bears go by.", 3, 5, 7, 15 ) );
+			HardForest.Add( new ESI( new string[] { "TimberWolf", "DireWolf", "GreyWolf" }, "A pack of wolves are fleeing something...", 3, 5, 7, 15 ) );
+			HardForest.Add( new ESI( new string[] { "GiantSpider", "GiantBlackWidow" }, "You've been ambushed by giant spiders!", 2, 4, 5, 10 ) );
+			HardForest.Add( new ESI( new string[] { "Brigand", "Brigand", "Brigand", "EvilWanderingHealer" }, "You've been ambushed by bandits!", 4, 6, 5, 10 ) );
+			HardForest.Add( new ESI( new string[] { "Treefellow", "Reaper", "Corpser", "WhippingVine" }, "The forest comes alive!", 2, 4, 7, 15 ) );
+			HardForest.Add( new ESI( new string[] { "Ratman", "RatmanArcher", "RatmanMage" }, "A Ratmen hunting party jumps out of the trees!", 5, 7, 10, 15 ) );
+			HardForest.Add( new ESI( new string[] { "Harpy", "Troll", "Gargoyle", "Ogre" }, "You discover a troll and its allies!", 2, 4, 7, 15 ) );
+			HardForest.Add( new ESI( new string[] { "Troll" }, "You discover a pair of trolls looking for dinner!", 2, 2, 7, 15 ) );
+			HardForest.Add( new ESI( new string[] { "EvilMage" }, "Your skin tingles with energy...", 1, 2, 7, 15 ) );
+			HardForest.Add( new ESI( new string[] { "SilverSerpent" }, "A giant snake descends from a tree!", 1, 1, 5, 10 ) );
+			HardForest.Add( new ESI( new string[] { "Horse" }, "A small herd of horses go by.", 3, 5, 7, 15 ) );
+			HardForest.Add( new ESI( new string[] { "Guardian", "Executioner" }, "You disturb a band of outcasts!", 2, 3, 5, 15 ) );
+			HardForest.Add( new ESI( new string[] { "Guardian", "Executioner", "EvilMageLord" }, "You disturb a band of outcasts and their leaders!", 2, 4, 5, 15 ) );
+			HardForest.Add( new ESI( new string[] { "KhaldunZealot" }, "A lone Khaldun wanders through the forest...", 1, 1, 7, 15 ) );
+			HardForest.Add( new ESI( new string[] { "KhaldunZealot" }, "You've been ambushed by a Khaldun scouting party!", 2, 4, 5, 10 ) );
+			HardForest.Add( new ESI( new string[] { "KhaldunZealot", "KhaldunSummoner" }, "You've been ambushed by a Khaldun war party", 3, 5, 5, 10 ) );
+			HardForest.Add( new ESI( new string[] { "Drake" }, "The ground trembles beneath your feet...", 1, 1, 10, 20 ) );
+
+			HardForestNight.Add( new ESI( new string[] { "Treefellow", "Reaper", "Corpser", "WhippingVine" }, "The forest comes alive!", 2, 4, 7, 15 ) );
+			HardForestNight.Add( new ESI( new string[] { "StoneHarpy", "Troll", "Troll", "Troll", "StoneGargoyle", "OgreLord", "FireGargoyle" }, "You discover a troll and its allies!", 2, 4, 7, 15 ) );
+			HardForestNight.Add( new ESI( new string[] { "OgreLord", "OgreLord", "OgreLord", "Ogre" }, "You're ambushed by an ogre hunting party!", 3, 6, 7, 15 ) );
+			HardForestNight.Add( new ESI( new string[] { "Troll" }, "You discover a pair of trolls looking for dinner!", 2, 2, 7, 15 ) );
+			HardForestNight.Add( new ESI( new string[] { "EvilMage", "Imp" }, "Your skin tingles with energy...", 1, 2, 7, 15 ) );
+			HardForestNight.Add( new ESI( new string[] { "SilverSerpent" }, "A giant snake descends from a tree!", 1, 1, 5, 10 ) );
+			HardForestNight.Add( new ESI( new string[] { "Horse" }, "A small herd of horses go by. They seem to be afraid of something...", 3, 5, 7, 15 ) );
+			HardForestNight.Add( new ESI( new string[] { "Unicorn" }, "You see a beautiful creature up ahead...", 1, 1, 7, 15 ) );
+			HardForestNight.Add( new ESI( new string[] { "Guardian", "Executioner" }, "You disturb a band of outcasts!", 2, 3, 5, 15 ) );
+			HardForestNight.Add( new ESI( new string[] { "Guardian", "Executioner", "EvilMageLord" }, "You disturb a band of outcasts and their leaders!", 2, 4, 5, 15 ) );
+			HardForestNight.Add( new ESI( new string[] { "KhaldunZealot" }, "A lone Khaldun wanders through the forest...", 1, 1, 7, 15 ) );
+			HardForestNight.Add( new ESI( new string[] { "KhaldunZealot" }, "You've been ambushed by a Khaldun scouting party!", 2, 3, 5, 10 ) );
+			HardForestNight.Add( new ESI( new string[] { "KhaldunZealot", "KhaldunZealot", "KhaldunZealot", "KhaldunSummoner" }, "You've been ambushed by a Khaldun war party", 3, 5, 5, 10 ) );
+			HardForestNight.Add( new ESI( new string[] { "Drake" }, "The ground trembles beneath your feet...", 1, 1, 10, 20 ) );
+			HardForestNight.Add( new ESI( new string[] { "Dragon" }, "The ground trembles violently beneath your feet...", 1, 1, 10, 20 ) );
+			HardForestNight.Add( new ESI( new string[] { "Ravager" }, "A ferocious scream pierces the night air!", 1, 2, 10, 20 ) );
+			HardForestNight.Add( new ESI( new string[] { "VampireBat" }, "You hear the sound of flapping wings and suddenly you're surrounded!", 3, 5, 2, 4 ) );
+			HardForestNight.Add( new ESI( new string[] { "DreadSpider", "GiantBlackWidow" }, "You've been ambushed by giant spiders!", 2, 4, 5, 10 ) );
+			HardForestNight.Add( new ESI( new string[] { "SkeletalKnight", "Wraith", "BoneKnight", "RottingCorpse", "WailingBanshee", "Mummy", "AncientLich" }, "The stench of death is overpowering here!", 3, 5, 5, 10 ) );
+			#endregion
+			
+			#region Plains
+			EasyPlains.Add( new ESI( new string[] { "Bird", "Eagle" }, "You notice several birds looking for food in the grass.", 3, 5, 7, 15 ) );
+			EasyPlains.Add( new ESI( new string[] { "Rat", "Rat", "GiantRat", "Ratman", "RatmanArcher"  }, "You hear something scurry by...", 1, 3, 7, 15 ) );
+			EasyPlains.Add( new ESI( new string[] { "Horse"  }, "You see a lone horse off in the distance.", 1, 1, 15, 20 ) );
+			EasyPlains.Add( new ESI( new string[] { "Snake"  }, "You've stumbled across a vipers nest!", 1, 2, 3, 5 ) );
+			EasyPlains.Add( new ESI( new string[] { "Mongbat"  }, "You've been ambushed by mongbats!", 3, 5, 3, 5 ) );
+			EasyPlains.Add( new ESI( new string[] { "Goat", "Goat", "MountainGoat"  }, "A herd of goats are grazing up ahead...", 3, 5, 7, 15 ) );
+			EasyPlains.Add( new ESI( new string[] { "Sheep"  }, "You see a flock of sheep grazing nearby.", 3, 5, 7, 15 ) );
+			EasyPlains.Add( new ESI( new string[] { "Brigand"  }, "You're attacked by a rogue bandit!", 1, 1, 7, 10 ) );
+			EasyPlains.Add( new ESI( new string[] { "Brigand"  }, "You're attacked by bandits!", 2, 3, 7, 10 ) );
+			
+			EasyPlainsNight.Add( new ESI( new string[] { "Bird", "Eagle" }, "You notice several birds looking for food in the grass.", 3, 5, 7, 15 ) );
+			EasyPlainsNight.Add( new ESI( new string[] { "Rat", "Rat", "GiantRat", "Ratman", "RatmanArcher"  }, "You hear something scurry by...", 1, 3, 7, 15 ) );
+			EasyPlainsNight.Add( new ESI( new string[] { "Snake"  }, "You've stumbled across a vipers nest!", 1, 2, 3, 5 ) );
+			EasyPlainsNight.Add( new ESI( new string[] { "Mongbat"  }, "You've been ambushed by mongbats!", 3, 5, 3, 5 ) );
+			EasyPlainsNight.Add( new ESI( new string[] { "VampireBat"  }, "You've been ambushed by bats!", 2, 3, 5, 8 ) );
+			EasyPlainsNight.Add( new ESI( new string[] { "Brigand"  }, "You're attacked by bandits!", 2, 3, 7, 10 ) );
+			EasyPlainsNight.Add( new ESI( new string[] { "Brigand", "EvilMage"  }, "You're attacked by bandits!", 2, 3, 7, 10 ) );
+			EasyPlainsNight.Add( new ESI( new string[] { "Zombie", "Skeleton", "GiantSpider", "Headless" }, "You stumble into the path of the undead!", 2, 5, 7, 15 ) );
+			
+			MediumPlains.Add( new ESI( new string[] { "Bird", "Eagle" }, "You notice several birds looking for food in the grass.", 3, 5, 7, 15 ) );
+			MediumPlains.Add( new ESI( new string[] { "Ratman", "RatmanArcher"  }, "You hear something scurry by...", 2, 4, 7, 15 ) );
+			MediumPlains.Add( new ESI( new string[] { "Snake"  }, "You've stumbled across a vipers nest!", 1, 2, 3, 5 ) );
+			MediumPlains.Add( new ESI( new string[] { "Mongbat"  }, "You've been ambushed by mongbats!", 3, 5, 3, 5 ) );
+			MediumPlains.Add( new ESI( new string[] { "VampireBat"  }, "You've been ambushed by bats!", 2, 3, 5, 8 ) );
+			MediumPlains.Add( new ESI( new string[] { "Brigand"  }, "You're attacked by bandits!", 2, 3, 7, 10 ) );
+			MediumPlains.Add( new ESI( new string[] { "Brigand", "EvilMage"  }, "You're attacked by bandits!", 2, 3, 7, 10 ) );
+			MediumPlains.Add( new ESI( new string[] { "Orc" }, "You're ambushed by orcs!", 2, 3, 7, 10 ) );
+			MediumPlains.Add( new ESI( new string[] { "Orc", "OrcCaptain" }, "You're ambushed by an orc warparty!", 3, 7, 7, 10 ) );
+			
+			MediumPlainsNight.Add( new ESI( new string[] { "Bird", "Eagle" }, "You notice several birds looking for food in the grass.", 3, 5, 7, 15 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "Ratman", "RatmanArcher"  }, "You hear something scurry by...", 2, 4, 7, 15 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "Snake"  }, "You've stumbled across a vipers nest!", 1, 2, 3, 5 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "Mongbat"  }, "You've been ambushed by mongbats!", 3, 5, 3, 5 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "VampireBat"  }, "You've been ambushed by bats!", 2, 3, 5, 8 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "Brigand"  }, "You're attacked by bandits!", 2, 3, 7, 10 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "Brigand", "EvilMage"  }, "You're attacked by bandits!", 2, 3, 7, 10 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "Orc" }, "You're ambushed by orcs!", 2, 3, 7, 10 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "Orc", "OrcCaptain" }, "You're ambushed by an orc scouting party!", 3, 7, 7, 10 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "Ogre" }, "You're ambushed by ogres!", 2, 3, 7, 10 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "Orc", "OrcCaptain", "Orc", "OrcCaptain", "OrcBomber", "Ogre", "OgreLord" }, "You're ambushed by an orc war party!", 4, 6, 7, 10 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "Zombie", "Skeleton", "GiantSpider", "Headless" }, "You stumble into the path of the undead!", 2, 5, 7, 15 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "EvilMage" }, "Your skin tingles with energy...", 1, 2, 7, 15 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "TimberWolf", "DireWolf", "GreyWolf" }, "You've caught the attention of a pack of wolves!", 3, 5, 7, 15 ) );
+			MediumPlainsNight.Add( new ESI( new string[] { "Spectre", "Wraith", "Ghoul", "RottingCorpse" }, "The scent of death overpowers you...", 2, 5, 5, 10 ) );
+
+			HardPlains.Add( new ESI( new string[] { "Bird", "Eagle" }, "You notice several birds looking for food in the grass.", 3, 5, 7, 15 ) );
+			HardPlains.Add( new ESI( new string[] { "Ratman", "RatmanArcher"  }, "You hear something scurry by...", 2, 4, 7, 15 ) );
+			HardPlains.Add( new ESI( new string[] { "Snake"  }, "You've stumbled across a vipers nest!", 1, 2, 3, 5 ) );
+			HardPlains.Add( new ESI( new string[] { "Mongbat"  }, "You've been ambushed by mongbats!", 3, 5, 3, 5 ) );
+			HardPlains.Add( new ESI( new string[] { "VampireBat"  }, "You've been ambushed by bats!", 2, 3, 5, 8 ) );
+			HardPlains.Add( new ESI( new string[] { "Brigand"  }, "You're attacked by bandits!", 2, 3, 7, 10 ) );
+			HardPlains.Add( new ESI( new string[] { "Brigand", "EvilMage"  }, "You're attacked by bandits!", 2, 3, 7, 10 ) );
+			HardPlains.Add( new ESI( new string[] { "Orc" }, "You're ambushed by orcs!", 2, 3, 7, 10 ) );
+			HardPlains.Add( new ESI( new string[] { "Orc", "OrcCaptain" }, "You're ambushed by an orc scouting party!", 3, 7, 7, 10 ) );
+			HardPlains.Add( new ESI( new string[] { "Ogre" }, "You're ambushed by ogres!", 2, 3, 7, 10 ) );
+			HardPlains.Add( new ESI( new string[] { "Orc", "OrcCaptain", "Orc", "OrcCaptain", "OrcBomber", "Ogre", "OgreLord" }, "You're ambushed by an orc war party!", 4, 6, 7, 10 ) );
+			HardPlains.Add( new ESI( new string[] { "Zombie", "Skeleton", "GiantSpider", "Headless" }, "You stumble into the path of the undead!", 2, 5, 7, 15 ) );
+			HardPlains.Add( new ESI( new string[] { "EvilMage" }, "Your skin tingles with energy...", 1, 2, 7, 15 ) );
+			HardPlains.Add( new ESI( new string[] { "TimberWolf", "DireWolf", "GreyWolf" }, "You've caught the attention of a pack of wolves!", 3, 5, 7, 15 ) );
+			HardPlains.Add( new ESI( new string[] { "KhaldunZealot" }, "You've been ambushed by a Khaldun scouting party!", 2, 4, 5, 10 ) );
+			HardPlains.Add( new ESI( new string[] { "Brigand", "Brigand", "Brigand", "EvilWanderingHealer" }, "You've been ambushed by bandits!", 4, 6, 5, 10 ) );
+			HardPlains.Add( new ESI( new string[] { "Horse" }, "A small herd of horses go by.", 3, 5, 7, 15 ) );
+			HardPlains.Add( new ESI( new string[] { "Guardian", "Executioner" }, "You disturb a band of outcasts!", 2, 3, 5, 15 ) );
+			HardPlains.Add( new ESI( new string[] { "Guardian", "Executioner", "EvilMageLord" }, "You disturb a band of outcasts and their leaders!", 2, 4, 5, 15 ) );
+
+			HardPlainsNight.Add( new ESI( new string[] { "Bird", "Eagle" }, "You notice several birds looking for food in the grass.", 3, 5, 7, 15 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Ratman", "RatmanArcher"  }, "You hear something scurry by...", 2, 4, 7, 15 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Snake"  }, "You've stumbled across a vipers nest!", 1, 2, 3, 5 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Mongbat"  }, "You've been ambushed by mongbats!", 3, 5, 3, 5 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "VampireBat"  }, "You've been ambushed by bats!", 2, 3, 5, 8 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Brigand"  }, "You're attacked by bandits!", 2, 3, 7, 10 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Brigand", "EvilMage"  }, "You're attacked by bandits!", 2, 3, 7, 10 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Orc" }, "You're ambushed by orcs!", 2, 3, 7, 10 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Orc", "OrcCaptain" }, "You're ambushed by an orc scouting party!", 3, 7, 7, 10 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Ogre" }, "You're ambushed by ogres!", 2, 3, 7, 10 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Orc", "OrcCaptain", "Orc", "OrcCaptain", "OrcBomber", "Ogre", "OgreLord" }, "You're ambushed by an orc war party!", 4, 6, 7, 10 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Zombie", "Skeleton", "GiantSpider", "Headless" }, "You stumble into the path of the undead!", 2, 5, 7, 15 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "EvilMage" }, "Your skin tingles with energy...", 1, 2, 7, 15 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "TimberWolf", "DireWolf", "GreyWolf" }, "You've caught the attention of a pack of wolves!", 3, 5, 7, 15 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Brigand", "Brigand", "Brigand", "EvilWanderingHealer" }, "You've been ambushed by bandits!", 4, 6, 5, 10 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Horse" }, "A small herd of horses go by.", 3, 5, 7, 15 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Guardian", "Executioner" }, "You disturb a band of outcasts!", 2, 3, 5, 15 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Guardian", "Executioner", "EvilMageLord" }, "You disturb a band of outcasts and their leaders!", 2, 4, 5, 15 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Unicorn" }, "You see a beautiful creature up ahead...", 1, 1, 7, 15 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "KhaldunZealot" }, "A lone Khaldun wanders through the forest...", 1, 1, 7, 15 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "KhaldunZealot" }, "You've been ambushed by a Khaldun scouting party!", 2, 3, 5, 10 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "KhaldunZealot", "KhaldunZealot", "KhaldunZealot", "KhaldunSummoner" }, "You've been ambushed by a Khaldun war party", 3, 5, 5, 10 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "Ravager" }, "A ferocious scream pierces the night air!", 1, 2, 10, 20 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "DreadSpider", "GiantBlackWidow" }, "You've been ambushed by giant spiders!", 2, 4, 5, 10 ) );
+			HardPlainsNight.Add( new ESI( new string[] { "SkeletalKnight", "Wraith", "BoneKnight", "RottingCorpse", "WailingBanshee", "Mummy", "AncientLich" }, "The stench of death is overpowering here!", 3, 5, 5, 10 ) );
+			#endregion
+			
+			#region Gorge
+			Gorge.Add( new ESI( new string[] { "Orc" }, "You're ambushed by orcs!", 2, 3, 7, 10 ) );
+			Gorge.Add( new ESI( new string[] { "Orc", "OrcCaptain", "OrcishMage" }, "You're ambushed by an orc scouting party!", 3, 7, 7, 10 ) );
+			Gorge.Add( new ESI( new string[] { "Ogre" }, "You're ambushed by ogres!", 2, 3, 7, 10 ) );
+			Gorge.Add( new ESI( new string[] { "Cyclops" }, "You're attacked by cyclops!", 2, 3, 7, 10 ) );
+			Gorge.Add( new ESI( new string[] { "ShadowWyrm" }, "The ground begins to tremble...", 1, 1, 15, 20 ) );
+			Gorge.Add( new ESI( new string[] { "Cyclops", "Titan" }, "You're attacked by cyclops and their masters!", 2, 3, 7, 10 ) );
+			Gorge.Add( new ESI( new string[] { "Orc", "OrcCaptain", "Orc", "OrcCaptain", "OrcBomber", "Ogre", "OgreLord", "OrcishMage" }, "You're ambushed by an orc war party!", 4, 6, 7, 10 ) );
+
+			GorgeNight.Add( new ESI( new string[] { "Orc" }, "You're ambushed by orcs!", 2, 3, 7, 10 ) );
+			GorgeNight.Add( new ESI( new string[] { "Orc", "OrcCaptain", "OrcishMage" }, "You're ambushed by an orc scouting party!", 3, 7, 7, 10 ) );
+			GorgeNight.Add( new ESI( new string[] { "Ogre" }, "You're ambushed by ogres!", 2, 3, 7, 10 ) );
+			GorgeNight.Add( new ESI( new string[] { "Cyclops" }, "You're attacked by cyclops!", 2, 3, 7, 10 ) );
+			GorgeNight.Add( new ESI( new string[] { "ShadowWyrm" }, "The ground begins to tremble...", 1, 1, 15, 20 ) );
+			GorgeNight.Add( new ESI( new string[] { "Cyclops", "Titan" }, "You're attacked by cyclops and their masters!", 2, 3, 7, 10 ) );
+			GorgeNight.Add( new ESI( new string[] { "Orc", "OrcCaptain", "Orc", "OrcCaptain", "OrcBomber", "Ogre", "OgreLord", "OrcishMage" }, "You're ambushed by an orc war party!", 4, 6, 7, 10 ) );
+			GorgeNight.Add( new ESI( new string[] {"Bogle", "Ghoul", "Shade", "Spectre", "Wraith", "AncientLich", "Lich", "LichLord", "BoneKnight", "BoneMagi", "SkeletalKnight",
+																		"SkeletalMage", "Skeleton", "Mummy", "RottingCorpse" }, "You look up and are suddenly surrounded by the damned!", 4, 8, 10, 20 ) );
+			#endregion
+			
+			#region Desert
+			// Rook will do these, because he's so great.
+			MediumDesert.Add( new ESI( new string[] { "Snake", "GiantSerpent" }, "You disturb a nest of serpents.", 4, 7, 3, 5 ) );
+			MediumDesert.Add( new ESI( new string[] { "Scorpion" }, "Scorpions begin crawling from the sands", 4, 7, 6, 8 ) );
+			MediumDesert.Add( new ESI( new string[] { "RedSolenWorker", "RedSolenWarrior", "RedSolenInfiltratorQueen", "RedSolenInfiltratorWarrior" }, "A band of working ants appear.", 4, 7, 7, 10 ) );
+			MediumDesert.Add( new ESI( new string[] { "BlackSolenWorker", "BlackSolenWarrior", "BlackSolenInfiltratorQueen", "BlackSolenInfiltratorWarrior" }, "A band of working ants appear.", 4, 7, 7, 10 ) );
+			MediumDesert.Add( new ESI( new string[] { "Wyvern" }, "A pack of Wyverns swoops upon you!", 2, 3, 5, 10 ) );
+
+			MediumDesertNight.Add( new ESI( new string[] { "Scorpion" }, "Scorpions boil from the sands.", 5, 10, 7, 15 ) );
+			MediumDesertNight.Add( new ESI( new string[] { "Zombie", "Skeleton", "Mummy" }, "Undead rise up from the sands", 5, 9, 7, 12 ) );
+			MediumDesertNight.Add( new ESI( new string[] { "AntLion" }, "An ant lion rises from it's trap to snare you for dinner.", 1, 1, 2, 2 ) );
+			MediumDesertNight.Add( new ESI( new string[] { "RedSolenWorker", "RedSolenWarrior", "RedSolenInfiltratorQueen", "RedSolenInfiltratorWarrior" }, "You stumble across a party of hunting ants.", 4, 7, 7, 10 ) );
+			MediumDesertNight.Add( new ESI( new string[] { "BlackSolenWorker", "BlackSolenWarrior", "BlackSolenInfiltratorQueen", "BlackSolenInfiltratorWarrior" }, "You stumble across a party of hunting ants.", 4, 7, 7, 10 ) );
+
+			HardDesert.Add( new ESI( new string[] { "RedSolenWarrior", "RedSolenWarrior", "RedSolenInfiltratorQueen", "RedSolenInfiltratorWarrior", "RedSolenQueen" }, "An ant guardforce finds you.", 6, 9, 7, 10 ) );
+			HardDesert.Add( new ESI( new string[] { "BlackSolenWarrior", "BlackSolenWarrior", "BlackSolenInfiltratorQueen", "BlackSolenInfiltratorWarrior", "BlackSolenQueen" }, "An ant guardforce finds you.", 6, 9, 7, 10 ) );
+			HardDesert.Add( new ESI( new string[] { "Efreet", "SandVortex", "SandVortex" }, "An evil wind blows your way.", 4, 6, 3, 10 ) );
+			HardDesert.Add( new ESI( new string[] { "Drake" }, "A group of playful drakes descend from the sky.", 2, 4, 5, 10 ) );
+			HardDesert.Add( new ESI( new string[] { "OphidianWarrior", "OphidianWarrior", "OphidianWarrior", "OphidianMage", "OphidianKnight" }, "A band of hunting Ophidians find you.", 4, 9, 7, 10 ) );
+
+			HardDesertNight.Add( new ESI( new string[] { "RedSolenWarrior", "RedSolenWarrior", "RedSolenInfiltratorQueen", "RedSolenInfiltratorWarrior", "RedSolenQueen" }, "An ant guardforce finds you.", 6, 9, 7, 10 ) );
+			HardDesertNight.Add( new ESI( new string[] { "BlackSolenWarrior", "BlackSolenWarrior", "BlackSolenInfiltratorQueen", "BlackSolenInfiltratorWarrior", "BlackSolenQueen" }, "An ant guardforce finds you.", 6, 9, 7, 10 ) );
+			HardDesertNight.Add( new ESI( new string[] { "Dragon" }, "A dragon drops from the sky.", 1, 1, 5, 8 ) );
+			HardDesertNight.Add( new ESI( new string[] { "OphidianWarrior", "OphidianArchmage", "OphidianWarrior", "OphidianMage", "OphidianKnight" }, "A band of hunting Ophidians find you.", 4, 9, 7, 10 ) );
+			MediumDesertNight.Add( new ESI( new string[] { "Zombie", "Skeleton", "Mummy", "RottingCorpse", "BoneKnight", "BoneMagi", "Lich", "LichLord", "AncientLich"  }, "Undead rise up from the sands", 2, 8, 7, 12 ) );
+			#endregion
+			
+			#region Snow
+			// Rook will do these, because he's so great.
+			#endregion
+			
+			#region Swamp
+			// Rook will do these, because he's so great.
+			Swamp.Add( new ESI( new string[] { "Lizardman" }, "A hunting party attacks.", 3, 5, 5, 9 ) );
+			Swamp.Add( new ESI( new string[] { "Snake", "GiantSerpent" }, "You disturb a nest of serpents.", 4, 7, 3, 5 ) );
+			Swamp.Add( new ESI( new string[] { "Reaper" }, "An man-eating tree decides you'd be good fertilizer.", 1, 2, 5, 15 ) );
+			Swamp.Add( new ESI( new string[] { "Corpser", "Swamp Tentacle", "Quagmire", "WhippingVine" }, "A group of carnivorous plants rises from the muck.", 2, 6, 5, 15 ) );
+			Swamp.Add( new ESI( new string[] { "Boglings" }, "You find a group of scavenging boglings", 4, 7, 3, 8 ) );
+			Swamp.Add( new ESI( new string[] { "BogThing" }, "You find a foul smelling nest!", 1, 1, 2, 4 ) );
+			Swamp.Add( new ESI( new string[] { "SwampTroll", "SwampTroll", "SwampTroll", "SwampTrollSkald" }, "A swamp troll hunting party finds you.", 1, 3, 5, 15 ) );
+			Swamp.Add( new ESI( new string[] { "GiantSalamander" }, "An odd colored salamander crawls from the ooze!", 1, 1, 2, 4 ) );
+			Swamp.Add( new ESI( new string[] { "Slime" }, "You step in a pile of slimes!", 3, 10, 2, 4 ) );
+			Swamp.Add( new ESI( new string[] { "BullFrog", "GiantToad" }, "Ribbit", 4, 7, 3, 5 ) );
+
+			SwampNight.Add( new ESI( new string[] { "PlagueBeast" }, "You stumble over a large pile of ooze.", 1, 1, 1, 4 ) );
+			SwampNight.Add( new ESI( new string[] { "BullFrog", "GiantToad" }, "Ribbit", 4, 7, 3, 5 ) );
+			SwampNight.Add( new ESI( new string[] { "SwampTroll", "SwampTroll", "SwampTrollWitchDoctor", "SwampTrollSkald" }, "You stumble into a swamp troll camp.", 2, 5, 5, 10 ) );
+			SwampNight.Add( new ESI( new string[] { "Slime" }, "You step in a pile of slimes!", 3, 10, 2, 4 ) );
+			SwampNight.Add( new ESI( new string[] { "WaterElemental", "ToxicElemental" }, "The elements rise up against you!", 2, 4, 4, 9 ) );
+			SwampNight.Add( new ESI( new string[] { "RottingCorpse", "Zombie", "Ghoul", "Bogle", "Spectre" }, "Undead rise from the muck!", 3, 6, 4, 9 ) );
+			#endregion
+		}
+		
+		public string[] Creatures;
+		public string Messages;
+		public int Count;
+		public int HomeRange;
+		
+		public EncounterSpawnerInfo( string[] creatures, string message, int mincount, int maxcount, int minrange, int maxrange )
+		{
+			Creatures = creatures;
+			Messages = message;
+			Count = Utility.RandomMinMax( mincount, maxcount );
+			HomeRange = Utility.RandomMinMax( minrange, maxrange );
+		}
+	}
+	#endregion
+	
+	#region Spawner
+	public class EncounterSpawner : Spawner
+	{
+		public override bool Decays { get { return true; } }
+		public override TimeSpan DecayTime { get { return TimeSpan.FromMinutes( 45.0 ); } }
+		
+		public void StartSpawn()
+		{
+			this.MinDelay = TimeSpan.FromSeconds( 0.0 );
+			this.MaxDelay = TimeSpan.FromSeconds( 1.0 );
+								
+			if ( this.Running )
+			{
+				this.RemoveCreatures();
+				this.Respawn();
+			} 
+			else 
+			{
+				this.Start();
+				this.Respawn();
+			}
+				
+			this.MinDelay = TimeSpan.FromDays( 1.0 );
+			this.MaxDelay = TimeSpan.FromDays( 1.0 );
+		}
+
+		[Constructable]
+		public EncounterSpawner( EncounterSpawnerInfo esi ) : base()
+		{
+			Name = "Encounter Spawner";
+			LootType = LootType.Blessed;
+				
+			ItemID = 16104;
+			
+			this.CreaturesName = ArrayList.Adapter( esi.Creatures );
+			this.Count = esi.Count;
+			this.HomeRange = esi.HomeRange;
+			
+			this.Running = false;
+		}
+		
+		[Constructable]
+		public EncounterSpawner() : base()
+		{
+			Name = "Encounter Spawner";
+			LootType = LootType.Blessed;
+				
+			ItemID = 16104;
+			
+			Running = true;
+		}
+		
+		public EncounterSpawner( Serial serial ) : base( serial )
+		{
+		}
+				
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+	#endregion
+	
+	#region Encounter Timer
+	public class EncounterTimer : Timer
+	{
+		public static int MinEncounterTime = 4;					// Minutes
+		public static int MaxEncounterTime = 6;				// Minutes
+		public static int MediumEncounterTimeMod = 2;		// Minutes
+		public static int HardEncounterTimeMod = 4;			// Minutes
+		public static int InitialEncounterDelay = 30;			// Seconds
+		public static int SpawnerCheckRange = 15;			// Range
+		
+		TeiravonMobile m_Player;
+		
+		public EncounterTimer( TeiravonMobile player ) : base( TimeSpan.FromSeconds( InitialEncounterDelay ) )
+		{
+			m_Player = player;
+		}
+		
+		protected override void OnTick()
+		{
+			int timemod = 0;
+			
+			if ( m_Player.Region != null && !m_Player.Hidden )
+			{
+				bool spawn = true;
+				
+				foreach( Item i in m_Player.GetItemsInRange( 4 ) )
+					if ( i is Campfire && ((Campfire)i).Status == CampfireStatus.Burning )
+						spawn = false;
+				
+				Region region = m_Player.Region;
+				int hour = 0;
+				int min = 0;
+				
+				Clock.GetTime( m_Player.Map, m_Player.X, m_Player.Y, out hour, out min );
+				
+				bool dark = ( hour > 20 || hour < 4 );
+				
+					
+				EncounterSpawner s = null;
+				ESI info = null;
+
+				if ( spawn )
+				{
+					switch ( region.Name )
+					{
+						case "Easy Forest":
+							if ( dark )
+								info = (ESI)ESI.EasyForestNight[ Utility.RandomMinMax( 0, ESI.EasyForestNight.Count - 1 ) ];
+							else
+								info = (ESI)ESI.EasyForest[ Utility.RandomMinMax( 0, ESI.EasyForest.Count - 1) ];
+							
+							s = new EncounterSpawner( info );
+							s.MoveToWorld( m_Player.Location, m_Player.Map );
+							
+							break;
+						
+						case "Medium Forest":
+							if ( dark )
+								info = (ESI)ESI.MediumForestNight[ Utility.RandomMinMax( 0, ESI.MediumForestNight.Count -1) ];
+							else
+								info = (ESI)ESI.MediumForest[ Utility.RandomMinMax( 0, ESI.MediumForest.Count -1) ];
+							
+							s = new EncounterSpawner( info );
+							s.MoveToWorld( m_Player.Location, m_Player.Map );
+						
+							timemod = MediumEncounterTimeMod;
+							
+							break;
+						
+						case "Hard Forest":
+							if ( dark )
+								info = (ESI)ESI.HardForestNight[ Utility.RandomMinMax( 0, ESI.HardForestNight.Count -1) ];
+							else
+								info = (ESI)ESI.HardForest[ Utility.RandomMinMax( 0, ESI.HardForest.Count -1) ];
+							
+							s = new EncounterSpawner( info );
+							s.MoveToWorld( m_Player.Location, m_Player.Map );
+						
+							timemod = HardEncounterTimeMod;
+							break;
+											
+						case "Easy Plains":
+							if ( dark )
+								info = (ESI)ESI.EasyPlainsNight[ Utility.RandomMinMax( 0, ESI.EasyPlainsNight.Count -1) ];
+							else
+								info = (ESI)ESI.EasyPlains[ Utility.RandomMinMax( 0, ESI.EasyPlains.Count -1) ];
+							
+							s = new EncounterSpawner( info );
+							s.MoveToWorld( m_Player.Location, m_Player.Map );
+						
+							break;
+						
+						case "Medium Plains":
+							if ( dark )
+								info = (ESI)ESI.MediumPlainsNight[ Utility.RandomMinMax( 0, ESI.MediumPlainsNight.Count -1) ];
+							else
+								info = (ESI)ESI.MediumPlains[ Utility.RandomMinMax( 0, ESI.MediumPlains.Count -1) ];
+							
+							s = new EncounterSpawner( info );
+							s.MoveToWorld( m_Player.Location, m_Player.Map );
+
+							timemod = MediumEncounterTimeMod;
+							
+							break;
+						
+						case "Hard Plains":
+							if ( dark )
+								info = (ESI)ESI.HardPlainsNight[ Utility.RandomMinMax( 0, ESI.HardPlainsNight.Count -1) ];
+							else
+								info = (ESI)ESI.HardPlains[ Utility.RandomMinMax( 0, ESI.HardPlains.Count -1) ];
+							
+							s = new EncounterSpawner( info );
+							s.MoveToWorld( m_Player.Location, m_Player.Map );
+						
+							timemod = HardEncounterTimeMod;
+							break;
+							
+						case "Gorge":
+							if ( dark )
+								info = (ESI)ESI.GorgeNight[ Utility.RandomMinMax( 0, ESI.GorgeNight.Count -1) ];
+							else
+								info = (ESI)ESI.Gorge[ Utility.RandomMinMax( 0, ESI.Gorge.Count -1) ];
+							
+							s = new EncounterSpawner( info );
+							s.MoveToWorld( m_Player.Location, m_Player.Map );
+							
+							timemod = HardEncounterTimeMod;
+							break;
+
+						case "Medium Desert":
+							if ( dark )
+								info = (ESI)ESI.MediumDesertNight[ Utility.RandomMinMax( 0, ESI.MediumDesertNight.Count -1) ];
+							else
+								info = (ESI)ESI.MediumDesert[ Utility.RandomMinMax( 0, ESI.MediumDesert.Count -1) ];
+							
+							s = new EncounterSpawner( info );
+							s.MoveToWorld( m_Player.Location, m_Player.Map );
+							
+							timemod = MediumEncounterTimeMod;
+							break;
+
+						case "Hard Desert":
+							if ( dark )
+								info = (ESI)ESI.HardDesertNight[ Utility.RandomMinMax( 0, ESI.HardDesertNight.Count -1) ];
+							else
+								info = (ESI)ESI.HardDesert[ Utility.RandomMinMax( 0, ESI.HardDesert.Count -1) ];
+							
+							s = new EncounterSpawner( info );
+							s.MoveToWorld( m_Player.Location, m_Player.Map );
+							
+							timemod = HardEncounterTimeMod;
+							break;
+
+						case "Swamp":
+							if ( dark )
+								info = (ESI)ESI.SwampNight[ Utility.RandomMinMax( 0, ESI.SwampNight.Count -1) ];
+							else
+								info = (ESI)ESI.Swamp[ Utility.RandomMinMax( 0, ESI.Swamp.Count -1) ];
+							
+							s = new EncounterSpawner( info );
+							s.MoveToWorld( m_Player.Location, m_Player.Map );
+							
+							timemod = MediumEncounterTimeMod;
+							break;
+					}
+					
+					if (info != null)
+					{
+						bool deleteit = false;
+					
+						foreach( Item i in m_Player.GetItemsInRange( SpawnerCheckRange ) )
+						{
+							if ( i is EncounterSpawner && i != s )
+							{
+								deleteit = true;
+							}
+						}
+
+						if (deleteit)
+						{
+							s.Delete();
+							info = null;
+						}
+					
+						if ( info != null )
+						{
+							m_Player.SendMessage( Colors.FeatMessageColor, info.Messages );
+							s.StartSpawn();
+						}
+					}
+					
+				}
+			}
+				
+			Stop();
+			this.Delay = TimeSpan.FromMinutes( Utility.RandomMinMax( MinEncounterTime + timemod, MaxEncounterTime + timemod ) );
+			Start();
+		}
+	}
+	#endregion
+}

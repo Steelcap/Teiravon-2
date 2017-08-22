@@ -1,0 +1,356 @@
+using System;
+using Server.Targeting;
+using Server.Network;
+using Server.Mobiles;
+using Server.Teiravon;
+using Server.Items;
+using Server.Engines.XmlSpawner2;
+using System.Collections;
+
+namespace Server.Spells.Third
+{
+	public class BlessSpell : Spell
+	{
+        
+        public static Hashtable adalia = new Hashtable();
+        public static Hashtable valar = new Hashtable();
+        public static Hashtable kamalini = new Hashtable();
+        public static Hashtable kinarugi = new Hashtable();
+        public static Hashtable gruumsh = new Hashtable();
+        public static Hashtable saerin = new Hashtable();
+        public static Hashtable narindun = new Hashtable();
+        public static Hashtable talathas = new Hashtable();
+        public static Hashtable lloth = new Hashtable();
+
+		private static SpellInfo m_Info = new SpellInfo(
+				"Bless", "Rel Sanct",
+				SpellCircle.Third,
+				203,
+				9061,
+				Reagent.Garlic,
+				Reagent.MandrakeRoot
+			);
+
+		public BlessSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
+
+        private BlessHelper m_Timer;
+
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
+
+		public override int GetMana()
+		{
+			return 20;
+		}
+
+		public void Target( Mobile m )
+		{
+			if ( !Caster.CanSee( m ) )
+			{
+				Caster.SendLocalizedMessage( 500237 ); // Target can not be seen.
+			}
+			else if ( CheckBSequence( m ) )
+			{
+                if (Caster is TeiravonMobile && (((TeiravonMobile)Caster).IsCleric() || ((TeiravonMobile)Caster).IsDarkCleric()) && ((TeiravonMobile)Caster).Faith != TeiravonMobile.Deity.None)
+                {
+                    TeiravonMobile Cleric = Caster as TeiravonMobile;
+
+                    SpellHelper.Turn(Caster, m);
+
+                    switch (Cleric.Faith)
+                    {
+                        case TeiravonMobile.Deity.Adalia:
+                            {
+                                if (!adalia.Contains(m))
+                                    adalia.Add(m, DateTime.Now);
+                                if (m_Timer != null)
+                                    m_Timer.Stop();
+                                m_Timer = new BlessHelper(m, adalia);
+                                m_Timer.Start();
+
+                                m.FixedParticles(0x375A, 10, 15, 5018, EffectLayer.Waist);
+                                m.PlaySound(0x30C);
+                                m.PlaySound(0x5CB);
+                            }
+                            break;
+                        case TeiravonMobile.Deity.Cultist:
+                            {
+                                SpellHelper.AddStatBonus(Caster, m, StatType.Str); SpellHelper.DisableSkillCheck = true;
+                                SpellHelper.AddStatBonus(Caster, m, StatType.Dex);
+                                SpellHelper.AddStatBonus(Caster, m, StatType.Int); SpellHelper.DisableSkillCheck = false;
+
+                                int mod = SpellHelper.GetOffset(Caster, m, StatType.Str, false);
+                                TimeSpan duration = SpellHelper.GetDuration(Caster, m);
+
+                                if (m is TeiravonMobile)
+                                {
+                                    TeiravonMobile tav = m as TeiravonMobile;
+                                    tav.HitsMod = mod;
+                                    BlessTimer timer = new BlessTimer(Caster, (TeiravonMobile)m, duration, mod);
+                                    timer.Start();
+                                }
+
+                                m.FixedParticles(0x373A, 10, 15, 5018, EffectLayer.Waist);
+                                m.PlaySound(0x1EA);
+
+                                Caster.Damage(Utility.Random(6));
+                            }
+                            break;
+                        case TeiravonMobile.Deity.Gruumsh:
+                            {
+                                if (!gruumsh.Contains(m))
+                                    gruumsh.Add(m, DateTime.Now);
+                                if (m_Timer != null)
+                                    m_Timer.Stop();
+                                m_Timer = new BlessHelper(m, gruumsh);
+                                m_Timer.Start();
+
+                                m.FixedParticles(0x375A, 10, 15, 5018, 157, 4, EffectLayer.Waist);
+                                BleedAttack.BeginBleed(m, m);
+                                m.PlaySound(0x50F);
+                                m.PlaySound(0x02B);
+                            }
+                            break;
+                        case TeiravonMobile.Deity.Kamalini:
+                            {
+                                if (!kamalini.Contains(m))
+                                    kamalini.Add(m, DateTime.Now);
+                                if (m_Timer != null)
+                                    m_Timer.Stop();
+                                m_Timer = new BlessHelper(m, kamalini);
+                                m_Timer.Start();
+
+                                m.FixedParticles(0x375A, 10, 15, 5018, 157, 4, EffectLayer.Waist);
+                                m.PlaySound(0x4B7);
+                            }
+                            break;
+                        case TeiravonMobile.Deity.Kinarugi:
+                            {
+                                if (!kinarugi.Contains(m))
+                                    kinarugi.Add(m, DateTime.Now);
+                                if (m_Timer != null)
+                                    m_Timer.Stop();
+                                m_Timer = new BlessHelper(m, kinarugi);
+                                m_Timer.Start();
+
+                                m.FixedParticles(0x36FE, 10, 15, 5018, 2020, 4, EffectLayer.Waist);
+                                m.PlaySound(0x09F);
+                                m.PlaySound(0x5C4);
+                            }
+                            break;
+                        case TeiravonMobile.Deity.Lloth:
+                            {
+                                if (!lloth.Contains(m))
+                                    lloth.Add(m, DateTime.Now);
+                                if (m_Timer != null)
+                                    m_Timer.Stop();
+                                m_Timer = new BlessHelper(m, lloth);
+                                m_Timer.Start();
+
+                                m.Freeze(TimeSpan.FromSeconds(10));
+
+				IMount mount = m.Mount;
+				if (mount != null)
+					mount.Rider = null;
+                                Static coccoon = new Static(0x10DA);
+                                coccoon.MoveToWorld(m.Location, m.Map);
+                                LlothTimer l_Timer = new LlothTimer(m, (TeiravonMobile)Caster, coccoon);
+                                l_Timer.Start();
+                                m.BodyMod = -1;
+
+                                Effects.SendTargetEffect(m, 0x10DD, 150);
+                            }
+                            break;
+                        case TeiravonMobile.Deity.Narindun:
+                            {
+                                if (!narindun.Contains(m))
+                                    narindun.Add(m, DateTime.Now);
+                                if (m_Timer != null)
+                                    m_Timer.Stop();
+                                m_Timer = new BlessHelper(m, narindun);
+                                m_Timer.Start();
+
+                                m.FixedParticles(0x3789, 1, 40, 0x3F,906, 3, EffectLayer.Waist);
+                                m.PlaySound(0x029);
+                                m.PlaySound(0x5C6);
+                            }
+                            break;
+                        case TeiravonMobile.Deity.Saerin:
+                            {
+                                if (!saerin.Contains(m))
+                                    saerin.Add(m, DateTime.Now);
+                                if (m_Timer != null)
+                                    m_Timer.Stop();
+                                m_Timer = new BlessHelper(m, saerin);
+                                m_Timer.Start();
+
+                                m.FixedParticles(0x36FE, 10, 15, 5018, 2020, 4, EffectLayer.Waist);
+                                m.PlaySound(0x100);
+                                m.PlaySound(0x5BE);
+                            }
+                            break;
+                        case TeiravonMobile.Deity.Talathas:
+                            {
+                                if (!talathas.Contains(m))
+                                    talathas.Add(m, DateTime.Now);
+                                if (m_Timer != null)
+                                    m_Timer.Stop();
+                                m_Timer = new BlessHelper(m, talathas);
+                                m_Timer.Start();
+
+                                m.FixedParticles(0x36FE, 10, 15, 5018, 2020, 4, EffectLayer.Waist);
+                                m.PlaySound(0x100);
+                                m.PlaySound(0x5C4);
+                            }
+                            break;
+                        case TeiravonMobile.Deity.Valar:
+                            {
+                                if (!valar.Contains(m))
+                                    valar.Add(m, DateTime.Now);
+                                if (m_Timer != null)
+                                    m_Timer.Stop();
+                                m_Timer = new BlessHelper(m, valar);
+                                m_Timer.Start();
+
+                                m.FixedParticles(0x36FE, 10, 15, 5018, 2020, 4, EffectLayer.Waist);
+                                m.PlaySound(0x100);
+                                m.PlaySound(0x5C4);
+                            }
+                            break;
+                    }
+                }
+                else
+                {
+                    SpellHelper.AddStatBonus(Caster, m, StatType.Str); SpellHelper.DisableSkillCheck = true;
+                    SpellHelper.AddStatBonus(Caster, m, StatType.Dex);
+                    SpellHelper.AddStatBonus(Caster, m, StatType.Int); SpellHelper.DisableSkillCheck = false;
+
+                    int mod = SpellHelper.GetOffset(Caster, m, StatType.Str, false);
+                    TimeSpan duration = SpellHelper.GetDuration(Caster, m);
+
+                    if (m is TeiravonMobile)
+                    {
+                        TeiravonMobile tav = m as TeiravonMobile;
+                        tav.HitsMod = mod;
+                        BlessTimer timer = new BlessTimer(Caster, (TeiravonMobile)m, duration, mod);
+                        timer.Start();
+                    }
+
+                    m.FixedParticles(0x373A, 10, 15, 5018, EffectLayer.Waist);
+                    m.PlaySound(0x1EA);
+                }
+			}
+
+			FinishSequence();
+		}
+
+		private class InternalTarget : Target
+		{
+			private BlessSpell m_Owner;
+
+			public InternalTarget( BlessSpell owner ) : base( 12, false, TargetFlags.Beneficial )
+			{
+				m_Owner = owner;
+			}
+
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is Mobile )
+				{
+					m_Owner.Target( (Mobile)o );
+				}
+			}
+
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+
+        private class BlessHelper : Timer
+        {
+            Mobile m_From;
+            Hashtable m_Source;
+
+            public BlessHelper(Mobile from, Hashtable source)
+                : base(TimeSpan.FromMinutes(40))
+            {
+                m_From = from;
+                m_Source = source;
+            }
+
+            protected override void OnTick()
+            {
+                if (m_Source.Contains(m_From))
+                    m_Source.Remove(m_From);
+
+                m_From.SendMessage("Your blessing has worn off...");
+            }
+        }
+
+        private class LlothTimer : Timer
+        {
+            TeiravonMobile m_Caster;
+            Mobile m_Targ;
+            ResistanceMod m_Mod;
+            Static m_Coccoon;
+
+            public LlothTimer(Mobile targ, TeiravonMobile caster, Static coccoon)
+                : base(TimeSpan.FromSeconds(15))
+            {
+                m_Coccoon = coccoon;
+                m_Targ = targ;
+                m_Caster = caster;
+            }
+            protected override void OnTick()
+            {
+                if (m_Targ == null)
+                    return;
+                
+                if (m_Coccoon != null)
+                    m_Coccoon.Delete();
+
+                if (m_Targ is TeiravonMobile)
+                {
+                    TeiravonMobile tav = m_Targ as TeiravonMobile;
+                    int rank = tav.PlayerLevel / 6;
+                    int body = 0;
+
+                    if (rank >= 3)
+                        body = 173;
+                    else if (rank == 2)
+                        body = 0x9D;
+                    else
+                        body = 28;
+                    tav.BodyMod = 0;
+                    XmlMorph attachment = new XmlMorph(body, (60 * 40) - 10);
+                    XmlAttach.AttachTo(m_Targ, attachment);
+
+                }
+            }
+        }
+
+        private class BlessTimer : Timer
+        {
+            Mobile m_Cleric;
+            TeiravonMobile m_Targ;
+            int m_Mod;
+
+            public BlessTimer(Mobile from, TeiravonMobile targ, TimeSpan duration, int mod)
+                : base(duration)
+            {
+                m_Cleric = from;
+                m_Targ = targ;
+                m_Mod = mod;
+            }
+            protected override void OnTick()
+            {
+                m_Targ.HitsMod =0;
+            }
+        }
+	}
+}

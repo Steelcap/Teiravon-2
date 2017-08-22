@@ -1,0 +1,288 @@
+using System;
+using System.Collections;
+using Server.Items;
+using Server.ContextMenus;
+using Server.Misc;
+using Server.Network;
+
+namespace Server.Mobiles
+{
+	public class TownNPC : BaseVendor
+	{
+		public enum TownEnum
+		{
+			Edana,
+			FortressEntrigan,
+			Tilverton,
+			Arandor,
+			Tihrindo,
+			Revelstone
+		}
+
+		public override bool IsActiveVendor{ get{ return false; } }
+		private ArrayList m_SBInfos = new ArrayList();
+		protected override ArrayList SBInfos{ get { return m_SBInfos; } }
+		private TownEnum m_Town;
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public TownEnum Town
+		{
+			get { return m_Town; }
+			set 
+			{
+				m_Town = value;
+				InitOutfit();
+				if ( m_Town == TownEnum.Arandor || m_Town == TownEnum.Tihrindo )
+					Hue = Utility.RandomList( 0x15a, 0x15e, 0x15d );
+				else
+					Hue = Utility.RandomSkinHue();
+			}
+		}
+		[Constructable]
+		public TownNPC( TownEnum town ) : base( "" )
+		{
+			CantWalk = true;
+
+			m_Town = town;
+			if ( m_Town == TownEnum.Arandor || m_Town == TownEnum.Tihrindo )
+				Hue = Utility.RandomList( 0x15a, 0x15e, 0x15d );
+			else
+				Hue = Utility.RandomSkinHue();
+		}
+
+		[Constructable]
+		public TownNPC() : base( "" )
+		{
+			CantWalk = true;
+
+			if ( m_Town == TownEnum.Arandor || m_Town == TownEnum.Tihrindo )
+				Hue = Utility.RandomList( 0x15a, 0x15e, 0x15d );
+			else
+				Hue = Utility.RandomSkinHue();
+		}
+
+		public override void InitSBInfo()
+		{
+		}
+
+		public override void InitOutfit()
+		{
+            Item item;
+			item = FindItemOnLayer( Server.Layer.Arms );
+			if ( item != null )
+				item.Delete();
+			item = FindItemOnLayer( Server.Layer.Gloves );
+			if ( item != null )
+				item.Delete();
+			item = FindItemOnLayer( Server.Layer.Hair );
+			if ( item != null )
+				item.Delete();
+			item = FindItemOnLayer( Server.Layer.InnerLegs );
+			if ( item != null )
+				item.Delete();
+			item = FindItemOnLayer( Server.Layer.InnerTorso );
+			if ( item != null )
+				item.Delete();
+			item = FindItemOnLayer( Server.Layer.MiddleTorso );
+			if ( item != null )
+				item.Delete();
+			item = FindItemOnLayer( Server.Layer.Neck );
+			if ( item != null )
+				item.Delete();
+			item = FindItemOnLayer( Server.Layer.OuterLegs );
+			if ( item != null )
+				item.Delete();
+			item = FindItemOnLayer( Server.Layer.OuterTorso );
+			if ( item != null )
+				item.Delete();
+			item = FindItemOnLayer( Server.Layer.Pants);
+			if ( item != null )
+				item.Delete();
+			item = FindItemOnLayer( Server.Layer.Shirt );
+			if ( item != null )
+				item.Delete();
+			item = FindItemOnLayer( Server.Layer.Shoes );
+			if ( item != null )
+				item.Delete();
+			item = FindItemOnLayer( Server.Layer.Waist );
+			if ( item != null )
+				item.Delete();
+
+			switch ( m_Town )
+			{
+				case TownEnum.Edana:
+				{
+					if ( Female )
+					{
+						if ( Utility.RandomBool() )
+							EquipItem( new PlainDress( Utility.RandomDyedHue() ) );
+						else
+						{
+							EquipItem( new Skirt( Utility.RandomDyedHue() ) );
+							EquipItem( new FancyShirt( Utility.RandomDyedHue() ) );
+						}
+					}
+					else
+					{
+						EquipItem( new LongPants( Utility.RandomDyedHue() ) );
+						EquipItem( new FancyShirt( Utility.RandomDyedHue() ) );
+					}
+					EquipItem( new Boots() );
+					switch ( Utility.Random( 4 ) )
+					{
+						case 0: EquipItem( new ShortHair( Utility.RandomHairHue() ) ); break;
+						case 1: EquipItem( new TwoPigTails( Utility.RandomHairHue() ) ); break;
+						case 2: EquipItem( new LongHair( Utility.RandomHairHue() ) ); break;
+						case 3: EquipItem( new PonyTail( Utility.RandomHairHue() ) ); break;
+					}
+					break;
+				}
+
+				case TownEnum.FortressEntrigan:
+					EquipItem( new LeatherArms() );
+					EquipItem( new LeatherChest() );
+					EquipItem( new LeatherGloves() );
+					EquipItem( new LeatherGorget() );
+					EquipItem( new LeatherLegs() );
+					EquipItem( new LongPants( Utility.RandomMetalHue() ) );
+					EquipItem( new Shirt( Utility.RandomMetalHue() ) );
+					EquipItem( new Boots() );
+				switch ( Utility.Random( 4 ) )
+				{
+					case 0: EquipItem( new ShortHair( Utility.RandomHairHue() ) ); break;
+					case 1: EquipItem( new TwoPigTails( Utility.RandomHairHue() ) ); break;
+					case 2: EquipItem( new LongHair( Utility.RandomHairHue() ) ); break;
+					case 3: EquipItem( new PonyTail( Utility.RandomHairHue() ) ); break;
+				}
+					break;
+				case TownEnum.Tilverton:
+					if ( Female )
+						EquipItem( new Skirt( Utility.RandomNeutralHue() ) );
+					else
+						EquipItem( new LongPants( Utility.RandomDyedHue() ) );
+					EquipItem( new Shirt( Utility.RandomNeutralHue() ) );
+					EquipItem( new Boots() );
+				switch ( Utility.Random( 4 ) )
+				{
+					case 0: EquipItem( new ShortHair( Utility.RandomHairHue() ) ); break;
+					case 1: EquipItem( new TwoPigTails( Utility.RandomHairHue() ) ); break;
+					case 2: EquipItem( new LongHair( Utility.RandomHairHue() ) ); break;
+					case 3: EquipItem( new PonyTail( Utility.RandomHairHue() ) ); break;
+				}
+					break;
+				case TownEnum.Arandor:
+				case TownEnum.Tihrindo:
+					if ( Female )
+					{
+						if ( Utility.RandomBool() )
+							EquipItem( new PlainDress( Utility.RandomDyedHue() ) );
+						else
+						{
+							EquipItem( new Skirt( Utility.RandomDyedHue() ) );
+							EquipItem( new FancyShirt( Utility.RandomDyedHue() ) );
+						}
+							
+					}
+					else
+					{
+						EquipItem( new LongPants( Utility.RandomDyedHue() ) );
+						EquipItem( new FancyShirt( Utility.RandomDyedHue() ) );
+					}
+					EquipItem( new Boots() );
+				switch ( Utility.Random( 4 ) )
+				{
+					case 0: EquipItem( new ShortHair( Utility.RandomHairHue() ) ); break;
+					case 1: EquipItem( new TwoPigTails( Utility.RandomHairHue() ) ); break;
+					case 2: EquipItem( new LongHair( Utility.RandomHairHue() ) ); break;
+					case 3: EquipItem( new PonyTail( Utility.RandomHairHue() ) ); break;
+				}
+					break;
+				case TownEnum.Revelstone:
+					EquipItem( new Robe( Utility.RandomSkinHue() ) );
+				switch ( Utility.Random( 4 ) )
+				{
+					case 0: EquipItem( new ShortHair( Utility.RandomHairHue() ) ); break;
+					case 1: EquipItem( new TwoPigTails( Utility.RandomHairHue() ) ); break;
+					case 2: EquipItem( new LongHair( Utility.RandomHairHue() ) ); break;
+					case 3: EquipItem( new PonyTail( Utility.RandomHairHue() ) ); break;
+				}
+					break;
+			}
+		}
+
+		public TownNPC( Serial serial ) : base( serial )
+		{
+			if ( m_Town == TownEnum.Arandor || m_Town == TownEnum.Tihrindo )
+				Hue = Utility.RandomList( 0x15a, 0x15e, 0x15d );
+			else
+				Hue = Utility.RandomSkinHue();
+		}
+
+		public override void OnMovement(Mobile m, Point3D oldLocation)
+		{
+			if ( !m.Player )
+				return;
+
+			TeiravonMobile m_Player = (TeiravonMobile) m;
+
+			if ( !CanSee( m ) )
+				return;
+
+			if ( !InRange( m, 5 ) || InRange( oldLocation, 5 ) )
+				return; // only talk when they enter 5 tile range
+				
+			switch ( m_Town )
+			{
+				case TownEnum.Edana:
+					if ( m_Player.IsOrc() || m_Player.IsDrow() )
+						SayTo( m, "Please don't hurt me!  GUARDS!  GUARDS!" );
+					else if ( m_Player.CurrentLanguage != TeiravonMobile.LCommon )
+						SayTo( m, "Hello! I'm sorry, I don't know " + m_Player.CurrentLanguage + " language, but hello!" );
+					else if ( m_Player.IsDwarf() )
+						SayTo( m, "Hello little person!  Aren't you adorable?" );
+					else
+						SayTo( m, "Hello there!" );
+					break;
+
+				case TownEnum.FortressEntrigan:
+					SayTo( m, "Good day to you." );
+					break;
+
+				case TownEnum.Tilverton:
+					if ( m_Player.IsOrc() || m_Player.IsDrow() )
+						SayTo( m, "Oh, uh, excuse me... I'm just... excuse me, I'll be going..." );
+					else if ( m_Player.IsElf() )
+						SayTo( m, "Pointed-ear freak... get out of our city!" );
+					else if ( m_Player.IsDwarf() )
+						SayTo( m, "Oh great, a midget.  What are you doing here, midget?" );
+					else
+						SayTo( m, "You don't look like you're from around here.  You should leave while you can..." );
+					break;
+				case TownEnum.Arandor:
+				case TownEnum.Tihrindo:
+					SayTo( m, "Good day to you." );
+					break;
+				case TownEnum.Revelstone:
+					SayTo( m, "Good day to you." );
+					break;
+			}
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 0 ); // version
+			writer.Write( (int) m_Town );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+			m_Town = (TownEnum) reader.ReadInt();
+		}
+
+	}
+}

@@ -1,0 +1,305 @@
+using System;
+using Server;
+using Server.Engines.Craft;
+using Server.Mobiles;
+
+namespace Server.Items
+{
+	public enum PotionEffect
+	{
+		None,
+
+		Nightsight,
+		CureLesser,
+		Cure,
+		CureGreater,
+		Agility,
+		AgilityGreater,
+		Strength,
+		StrengthGreater,
+		PoisonLesser,
+		Poison,
+		PoisonGreater,
+		PoisonDeadly,
+		Refresh,
+		RefreshTotal,
+		HealLesser,
+		Heal,
+		HealGreater,
+		ExplosionLesser,
+		Explosion,
+		ExplosionGreater,
+
+		// Teiravon
+		Chameleon,
+		LesserFloat,
+		Float,
+		GreaterFloat,
+		Sustenance,
+		GreaterSustenance,
+		GenderSwap,
+		Invisibility,
+		ManaRefresh,
+		TotalManaRefresh,
+		MagicResist,
+		Invulnerability,
+		ElvenElixer,
+		PlantGrowth,
+		OreRefinement,
+		DwarvenRage,
+		DrowWeb,
+		DrowPoisonImmune,
+		OrcGrowth,
+		HumanEnhance,
+		PetHeal,
+        Genius,
+        GeniusGreater
+	}
+
+	public abstract class BasePotion : Item, ICraftable
+	{
+		private PotionEffect m_PotionEffect;
+
+		public PotionEffect PotionEffect
+		{
+			get
+			{
+				return m_PotionEffect;
+			}
+			set
+			{
+				m_PotionEffect = value;
+				InvalidateProperties();
+			}
+		}
+
+		public override int LabelNumber{ get{ return 1041314 + (int)m_PotionEffect - 1; } }
+
+
+		public BasePotion( int itemID, PotionEffect effect) : base( itemID )
+		{
+			m_PotionEffect = effect;
+			Stackable = true;
+			Weight = 1.0;
+            		Amount = 1;
+		}
+
+		public BasePotion( int itemID, PotionEffect effect, int amount ) : base( itemID )
+		{
+			m_PotionEffect = effect;
+			Stackable = true;
+			Weight = 1.0;
+            		Amount = amount;
+		}
+
+		public BasePotion( Serial serial ) : base( serial )
+		{
+		}
+
+		public virtual bool RequireFreeHand{ get{ return true; } }
+
+		public static bool HasFreeHand( Mobile m )
+		{
+			Item handOne = m.FindItemOnLayer( Layer.OneHanded );
+			Item handTwo = m.FindItemOnLayer( Layer.TwoHanded );
+
+			if ( handTwo is BaseWeapon )
+				handOne = handTwo;
+
+			return ( handOne == null || handTwo == null );
+		}
+
+		public static void BlockEquip( Mobile m, TimeSpan duration )
+		{
+			if ( m.BeginAction( typeof( BasePotion ) ) )
+				new ResetEquipTimer( m, duration ).Start();
+		}
+
+		private class ResetEquipTimer : Timer
+		{
+			private Mobile m_Mobile;
+
+			public ResetEquipTimer( Mobile m, TimeSpan duration )
+				: base( duration )
+			{
+				m_Mobile = m;
+			}
+
+			protected override void OnTick()
+			{
+				m_Mobile.EndAction( typeof( BasePotion ) );
+			}
+		}
+
+		public override void OnDoubleClick( Mobile from )
+		{
+			if ( !Movable || !from.CanBeginAction( typeof( BasePotion ) ) )
+				return;
+
+			if ( from.InRange( this.GetWorldLocation(), 1 ) )
+			{
+
+				//STARTMOD: Teiravon
+				if ( from is TeiravonMobile )
+				{
+					TeiravonMobile m_Player = (TeiravonMobile)from;
+
+					if ( ( m_Player.IsShapeshifter() || m_Player.IsForester() ) && ( m_Player.Shapeshifted || m_Player.IsShifted() ) )
+					{
+						m_Player.SendMessage( "You cannot use potions while shapeshifted." );
+						return;
+					}
+				}
+				//ENDMOD: Teiravon
+
+				if ( !RequireFreeHand || HasFreeHand( from ) )
+					Drink( from );
+				else
+					from.SendLocalizedMessage( 502172 ); // You must have a free hand to drink a potion.
+			}
+			else
+			{
+				from.SendLocalizedMessage( 502138 ); // That is too far away for you to use
+			}
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 0 ); // version
+
+			writer.Write( (int) m_PotionEffect );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+
+			switch ( version )
+			{
+				case 0:
+				{
+					m_PotionEffect = (PotionEffect)reader.ReadInt();
+					break;
+				}
+			}
+		}
+
+		public abstract void Drink( Mobile from );
+
+		public static void PlayDrinkEffect( Mobile m )
+		{
+			m.RevealingAction();
+
+			m.PlaySound( 0x2D6 );
+			m.AddToBackpack( new Bottle() );
+
+			if ( m.Body.IsHuman && !m.Mounted )
+				m.Animate( 34, 5, 1, true, false, 0 );
+		}
+
+		public static TimeSpan Scale( Mobile m, TimeSpan v )
+		{
+			if ( !Core.AOS )
+				return v;
+
+			double scalar = 1.0 + (0.01 * AosAttributes.GetValue( m, AosAttribute.EnhancePotions ));
+			if (m is TeiravonMobile)
+			{
+				TeiravonMobile tm = (TeiravonMobile)m;
+				if (tm.GetActivePotions(PotionEffect.HumanEnhance))
+					scalar += 1.0;
+			}
+			return TimeSpan.FromSeconds( v.TotalSeconds * scalar );
+		}
+
+		public static double Scale( Mobile m, double v )
+		{
+			if ( !Core.AOS )
+				return v;
+
+			double scalar = 1.0 + (0.01 * AosAttributes.GetValue( m, AosAttribute.EnhancePotions ));
+			if (m is TeiravonMobile)
+			{
+				TeiravonMobile tm = (TeiravonMobile)m;
+				if (tm.GetActivePotions(PotionEffect.HumanEnhance))
+					scalar += 1.0;
+			}
+            v *= 2;
+			return v * scalar;
+		}
+
+		public static int Scale( Mobile m, int v )
+		{
+			if ( !Core.AOS )
+				return v;
+
+			int scadj = 100;
+			if (m is TeiravonMobile)
+			{
+				TeiravonMobile tm = (TeiravonMobile)m;
+				if (tm.GetActivePotions(PotionEffect.HumanEnhance))
+					scadj += 100;
+			}
+            v *= 5;
+			return AOS.Scale( v, scadj + AosAttributes.GetValue( m, AosAttribute.EnhancePotions ) );
+		}
+
+        public override bool StackWith(Mobile from, Item dropped, bool playSound)
+        {
+            if (dropped is BasePotion && ((BasePotion)dropped).m_PotionEffect == m_PotionEffect)
+                return base.StackWith(from, dropped, playSound);
+
+            return false;
+        }
+		#region ICraftable Members
+
+		public int OnCraft( int quality, bool makersMark, Mobile from, CraftSystem craftSystem, Type typeRes, BaseTool tool, CraftItem craftItem, int resHue )
+		{
+			if ( craftSystem is DefAlchemy )
+			{
+				Container pack = from.Backpack;
+
+				if ( pack != null )
+				{
+					Item[] kegs = pack.FindItemsByType( typeof( PotionKeg ), true );
+
+					for ( int i = 0; i < kegs.Length; ++i )
+					{
+						PotionKeg keg = kegs[i] as PotionKeg;
+
+						if ( keg == null )
+							continue;
+
+						if ( keg.Held <= 0 || keg.Held >= 100 )
+							continue;
+
+						if ( keg.Type != PotionEffect )
+							continue;
+						
+						if (this is TeiravonPotion)
+						{
+							TeiravonPotion tp = (TeiravonPotion)this;
+							if (tp.Racial)
+								continue;
+						}
+
+						++keg.Held;
+
+						Delete();
+						from.AddToBackpack( new Bottle() );
+
+						return -1; // signal placed in keg
+					}
+				}
+			}
+
+			return 1;
+		}
+
+		#endregion
+	}
+}

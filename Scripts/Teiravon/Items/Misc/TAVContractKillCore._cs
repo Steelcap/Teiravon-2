@@ -1,0 +1,139 @@
+using System;
+using System.Collections;
+using System.Data;
+using System.Data.OleDb;
+using Server;
+using Server.Mobiles;
+using Server.Targeting;
+using Server.Scripts.Commands;
+
+namespace Server.Teiravon
+{
+	public class ContractKillCore
+	{
+		public static ArrayList Contracts = new ArrayList();
+
+		public static void Initialize()
+		{
+			EventSink.WorldSave += new WorldSaveEventHandler( OnEvent_WorldSave );
+			EventSink.WorldLoad += new WorldLoadEventHandler( OnEvent_WorldLoad );
+		}
+
+		private static void OnEvent_WorldSave( WorldSaveEventArgs e )
+		{
+			Save();
+		}
+
+		private static void OnEvent_WorldLoad()
+		{
+			Load();
+		}
+
+		public static void Save()
+		{
+			try
+			{
+				OleDbConnection m_Database = new OleDbConnection( "Provider=Microsoft.Jet.OLEDB.4.0; data source=D:\\RunUO\\GameData\\GameData.mdb" );
+				OleDbCommand m_SearchString = new OleDbCommand( "DELETE FROM contractkilldata WHERE 1 > 0", m_Database );
+
+				m_Database.Open();
+
+				m_SearchString.ExecuteNonQuery();
+
+				string sql;
+
+				foreach ( ContractKillEntry entry in Contracts )
+				{
+					sql = String.Format( "INSERT INTO contractkilldata VALUES ( null, {0}, {1}, {2}, '{3}', '{4}', '{5}', '{6}', {7}, {8}, {9}, {10}, '{11}' )",
+													entry.Contractor,
+													entry.Client,
+													entry.Target,
+													entry.CreatedOn,
+													entry.ExpiresOn,
+													entry.StartedOn,
+													entry.CompletedOn,
+													entry.Cost,
+													entry.ExpLoss,
+													entry.StrLoss,
+													entry.HPLoss,
+													entry.PermaDeath );
+
+					m_SearchString = new OleDbCommand( sql, m_Database );
+					m_SearchString.ExecuteNonQuery();
+				}
+
+				m_Database.Close();
+			} 
+			catch 
+			{
+				Console.WriteLine( "\n" + DateTime.Now.ToString( "H-m-s" ) + ": Contract Kill Save Error" );
+				CommandHandlers.BroadcastMessage( AccessLevel.Seer, 0x482, "Contract Kill System: Error saving database." );
+			}
+		}
+
+		public static void Load()
+		{
+			try
+			{
+				OleDbConnection m_Database = new OleDbConnection( "Provider=Microsoft.Jet.OLEDB.4.0; data source=D:\\RunUO\\GameData\\GameData.mdb" );
+				OleDbCommand m_SearchString = new OleDbCommand( "SELECT * FROM ContractKillData", m_Database );
+
+				m_Database.Open();
+
+				OleDbDataReader m_ContractKills = m_SearchString.ExecuteReader();
+
+				while ( m_ContractKills.Read() )
+				{
+					ContractKillEntry entry = new ContractKillEntry();
+
+					entry.Contractor = (int)m_ContractKills["Contractor"];
+					entry.Client = (int)m_ContractKills["Client"];
+					entry.Target = (int)m_ContractKills["Target"];
+
+					entry.CreatedOn = DateTime.Parse( m_ContractKills["CreatedOn"].ToString() );
+					entry.ExpiresOn = DateTime.Parse( m_ContractKills["ExpiresOn"].ToString() );
+					entry.StartedOn = DateTime.Parse( m_ContractKills["StartedOn"].ToString() );
+					entry.CompletedOn =  DateTime.Parse( m_ContractKills["CompletedOn"].ToString() );
+
+					entry.Cost = (int)m_ContractKills["Cost"];
+					entry.ExpLoss = (int)m_ContractKills["ExpLoss"];
+					entry.StrLoss = (int)m_ContractKills["StrLoss"];
+					entry.HPLoss = (int)m_ContractKills["HPLoss"];
+
+					if ( m_ContractKills["PermaDeath"].ToString().ToLower() == "false" )
+						entry.PermaDeath = false;
+					else
+						entry.PermaDeath = true;
+
+					Contracts.Add( entry );
+				}
+
+				m_Database.Close();
+
+			foreach ( ContractKillEntry entry in Contracts )
+				World.Broadcast( 0x35, true, entry.ExpLoss.ToString() );
+			}
+			catch 
+			{
+				Console.WriteLine( "\n" + DateTime.Now.ToString( "H-m-s" ) + ": Contract Kill Load Error" );
+				CommandHandlers.BroadcastMessage( AccessLevel.Seer, 0x482, "Contract Kill System: Error loading database." );
+			}
+		}
+	}
+
+	public struct ContractKillEntry
+	{
+		public int Contractor;
+		public int Client;
+		public int Target;
+		public DateTime CreatedOn;
+		public DateTime ExpiresOn;
+		public DateTime StartedOn;
+		public DateTime CompletedOn;
+		public int Cost;
+		public int ExpLoss;
+		public int StrLoss;
+		public int HPLoss;
+		public bool PermaDeath;
+	}
+}

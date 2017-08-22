@@ -1,0 +1,710 @@
+using System;
+using Server;
+using Server.Items;
+using Server.Mobiles;
+using System.Collections;
+using Server.Gumps;
+using Server.Targeting;
+using Server.Targets;
+
+namespace Server.Gumps
+{
+	public class StoneOfSavingGump : Gump
+	{
+		TeiravonMobile m_Player;
+		Item m_Stone;
+		ArrayList SavedInformation;
+
+		public StoneOfSavingGump( Mobile from, Item item, ArrayList data ) : base(0,0)
+		{
+
+			Closable = true;
+			Dragable = true;
+
+			m_Player = (TeiravonMobile) from;
+			m_Player.CloseGump( typeof(StoneOfSavingGump) );
+			m_Player.CloseGump( typeof(RestorePlayer) );
+			m_Stone = (Item) item;
+			SavedInformation = data;
+
+			AddPage(0);
+
+			AddBackground( 281, 179, 179, 244, 5054);
+			AddLabel( 302, 224, 237, "Stone of Saving");
+			AddButton( 303, 260, 2360, 2361, 1, GumpButtonType.Reply, 0 );
+			AddButton( 303, 290, 2360, 2361, 2, GumpButtonType.Reply, 0 );
+			AddButton( 303, 320, 2360, 2361, 3, GumpButtonType.Reply, 0 );
+			AddButton( 303, 350, 2360, 2361, 4, GumpButtonType.Reply, 0 );
+
+			AddLabel( 320, 260, 4, "Store player");
+			AddLabel( 320, 290, 4, "Restore player");
+			AddLabel( 320, 320, 4, "Remove player");
+			AddLabel( 320, 350, 4, "Curse player");
+
+			AddImage( 433, 226, 10432);
+
+			AddImageTiled(281, 195, 17, 183, 10200);
+			AddImage( 281, 181, 10203);
+
+			AddImageTiled(443, 196, 17, 28, 10200);
+			AddImage( 443, 181, 10203);
+
+			AddImage( 389, 180, 10462);
+			AddImage( 343, 180, 10462);
+			AddImage( 297, 180, 10462);
+			AddImage( 388, 209, 111);
+
+			AddImage( 281, 375, 10452);
+		}
+
+		public override void OnResponse( Server.Network.NetState sender, RelayInfo info )
+		{
+
+			switch ( info.ButtonID )
+			{
+				case 0:
+					m_Player.SendMessage( "You stop using the stone." );
+
+					break;
+
+				case 1:
+					m_Player.Target = new SaveTarget( m_Stone );
+
+					break;
+
+				case 2:
+					m_Player.SendGump( new RestorePlayer( m_Player, m_Stone, SavedInformation, false ) );
+
+					break;
+
+				case 3:
+					m_Player.SendGump( new RestorePlayer( m_Player, m_Stone, SavedInformation, true ) );
+
+					break;
+
+				case 4:
+					m_Player.Target = new CurseTarget( m_Stone, SavedInformation );
+
+					break;
+			}
+		}
+	}
+
+
+	public class RestorePlayer : Gump
+		{
+			TeiravonMobile m_Player;
+			StoneOfSaving m_Stone;
+			ArrayList SavedInformation;
+			int page;
+			int listplayer;
+			int playernumber;
+			bool delete;
+
+			public RestorePlayer( Mobile from, Item item, ArrayList data, bool deletemenu ) : base(0,0)
+			{
+
+				m_Player = (TeiravonMobile) from;
+				m_Player.CloseGump( typeof(RestorePlayer) );
+				m_Stone = (StoneOfSaving) item;
+				SavedInformation = data;
+				page = 1;
+				listplayer = 0;
+				playernumber = 1;
+				delete = deletemenu;
+
+				Closable = true;
+				Dragable = true;
+
+				AddPage(0);
+
+				AddBackground( 162, 86, 504, 491, 5054);
+				AddImage( 112, 83, 10440);
+				AddImage( 375, 151, 3504);
+				AddImage( 210, 151, 3504);
+				AddImage( 189, 254, 3503);
+				AddImage( 612, 152, 3505);
+				AddImage( 189, 129, 3500);
+				AddImage( 611, 129, 3502);
+				AddImage( 214, 129, 3501);
+				AddImage( 371, 129, 3501);
+				AddImage( 189, 494, 3506);
+				AddImage( 215, 494, 3507);
+				AddImage( 612, 494, 3508);
+				AddImage( 612, 252, 3505);
+				AddImage( 370, 494, 3507);
+				AddImage( 189, 153, 3503);
+				AddImage( 208, 258, 3504);
+				AddImage( 375, 258, 3504);
+
+				if (delete)
+				{
+					AddHtml( 201, 104, 425, 20, "<basefont size=\"16\" color=\"#250A0A\"><center><b>DELETE PLAYER</b></center></basefont>", false, false );
+					AddLabel( 211, 150, 200, "Select a player to delete");
+				}
+				else
+				{
+					AddHtml( 201, 104, 425, 20, "<basefont size=\"16\" color=\"#250A0A\"><center><b>RESTORE PLAYER</b></center></basefont>", false, false );
+					AddLabel( 211, 150, 200, "Select a player to restore");
+				}
+
+				AddLabel( 211,  462, 200, "Page: " + page );
+
+				for(int i=1; i <= SavedInformation.Count; i++)
+				{
+					ListPlayer(listplayer, page, playernumber);
+					listplayer++;
+					playernumber++;
+
+					if ( (i % 12 == 0) && (SavedInformation.Count > i) )
+					{
+						listplayer = 0;
+						AddPage(page);
+						AddButton( 615, 521, 22056, 22057, 0, GumpButtonType.Page, page + 1 );
+
+						page++;
+						AddPage(page);
+						AddLabel( 211,  462, 200, "Page: " + page );
+						AddButton( 591, 521, 22053, 22054, 0, GumpButtonType.Page, page - 1 );
+					}
+				}
+
+			}
+
+
+			private void ListPlayer( int x, int page, int playernumber )
+			{
+				AddPage(page);
+				SavedPlayer s_Player = SavedInformation[playernumber - 1] as SavedPlayer;
+
+				if (delete)
+				{
+					AddButton( 208, 172 + (x*24), 5531, 5530, playernumber, GumpButtonType.Reply, 0 );
+					AddLabel( 290, 172 + (x*24), 200, s_Player.AllInfo() );
+				}
+				else
+				{
+					AddButton( 208, 172 + (x*24), 4005, 4006, playernumber, GumpButtonType.Reply, 0 );
+					AddLabel( 245, 172 + (x*24), 200, s_Player.AllInfo() );
+				}
+
+			}
+
+
+			public override void OnResponse( Server.Network.NetState sender, RelayInfo info )
+			{
+
+				if ((SavedInformation.Count > 0) && (info.ButtonID != 0))
+				{
+
+					try
+					{
+						SavedPlayer s_Player = SavedInformation[info.ButtonID - 1] as SavedPlayer;
+
+						if ( s_Player == null )
+						{
+							m_Player.SendMessage( "Non-existant memory item!" );
+							return;
+						}
+
+						if (delete)
+						{
+							m_Player.SendMessage( "{0} has been removed from the stone.", s_Player.GetName() );
+							m_Stone.DeleteEntry( info.ButtonID - 1, m_Player );
+						}
+						else
+						{
+							m_Player.Target = new RestoreTarget( s_Player, m_Stone );
+							m_Player.SendMessage( "To whom do you wish to restore the information of {0}", s_Player.GetName() );
+						}
+					}
+
+					catch
+					{
+						m_Player.SendMessage( "An error occured, the memory item for the player has likely been removed." );
+					}
+
+				}
+				else
+					m_Player.SendMessage( "Request cancelled." );
+			}
+	}
+}
+
+
+namespace Server.Targets
+{
+
+	public class SaveTarget : Target
+	{
+		StoneOfSaving m_Stone;
+
+		public SaveTarget(Item item) : base( -1, false, TargetFlags.None )
+		{
+			m_Stone = (StoneOfSaving) item;
+		}
+
+		protected override void OnTarget( Mobile from, object targ )
+		{
+
+			if ( !(targ is PlayerMobile) )
+			{
+				from.SendMessage( "You can only save players." );
+				return;
+			}
+
+			else
+			{
+				PlayerMobile t = targ as PlayerMobile;
+				SaveThem( from, t );
+			}
+		}
+
+		private void SaveThem( Mobile from, Mobile targ )
+		{
+			PlayerMobile m = targ as PlayerMobile;
+			from.SendMessage( targ.Name + " has been saved to the stone." );
+			m_Stone.SaveThis( from, targ );
+
+		}
+	}
+
+
+	public class RestoreTarget : Target
+	{
+			SavedPlayer s_Player;
+			StoneOfSaving m_Stone;
+
+			public RestoreTarget( SavedPlayer item, StoneOfSaving stone ) : base( -1, false, TargetFlags.None )
+			{
+				s_Player = item;
+				m_Stone = stone;
+			}
+
+			protected override void OnTarget( Mobile from, object targ )
+			{
+
+				TeiravonMobile m_Target = (TeiravonMobile) targ;
+
+				bool safeguards = true;
+
+				if ( m_Stone != null )
+					safeguards = m_Stone.SafeGuards;
+
+				if ( !(targ is PlayerMobile) )
+				{
+					from.SendMessage( "You can only restore players." );
+					return;
+				}
+
+				if ( safeguards )
+				{
+					if ( (int)m_Target.PlayerClass < 1 )
+					{
+						from.SendMessage( "The character has no specified class. The target should go through chargen first!");
+						return;
+					}
+
+					else if( (int)m_Target.PlayerClass != s_Player.GetClass() )
+					{
+						from.SendMessage( "The target (" + m_Target.PlayerClass + ") is of different class than the stored player ("+ (TeiravonMobile.Class)s_Player.GetClass() + ")!");
+						return;
+					}
+
+					else if( (int)m_Target.PlayerRace != s_Player.GetRace() )
+					{
+						from.SendMessage( "The target (" + m_Target.PlayerRace + ") is of different race than the stored player ("+ (TeiravonMobile.Race)s_Player.GetRace() + ")!");
+						return;
+					}
+					else if ( m_Target.Name.ToLower() != s_Player.GetName().ToLower() )
+					{
+						from.SendMessage( "The character doesn't have the same name as the stored player!");
+						return;
+					}
+				}
+
+				RestoreThem( from, m_Target );
+			}
+
+			private void RestoreThem( Mobile from, Mobile targ )
+			{
+				PlayerMobile m_Restore = targ as PlayerMobile;
+				from.SendMessage( "{0} has been restored.", s_Player.GetName() );
+				s_Player.RestoreTargetInfo( m_Restore );
+				m_Restore.SendMessage( "You have been restored with the information of {0}.", s_Player.GetName() );
+			}
+	}
+
+
+	public class CurseTarget : Target
+	{
+		StoneOfSaving m_Stone;
+		ArrayList SavedInformation;
+		bool m_Found;
+
+		public CurseTarget(Item item, ArrayList data) : base( -1, false, TargetFlags.None )
+		{
+			m_Stone = (StoneOfSaving) item;
+			SavedInformation = data;
+			m_Found = false;
+		}
+
+		protected override void OnTarget( Mobile from, object targ )
+		{
+
+			if ( !(targ is PlayerMobile) )
+			{
+				from.SendMessage( "You can only curse players." );
+				return;
+			}
+			else
+			{
+				PlayerMobile t = (PlayerMobile)targ;
+				CurseThem( from, t );
+			}
+		}
+
+		private void CurseThem( Mobile from, Mobile targ )
+		{
+
+			TeiravonMobile m_Curse = targ as TeiravonMobile;
+
+			if ( m_Curse == null )
+			{
+				from.SendMessage( "Target is not a Teiravonmobile!" );
+				return;
+			}
+
+			for (int i = 0; i < SavedInformation.Count; i++ )
+			{
+				if ( m_Curse.Name.ToLower() == (((SavedPlayer)SavedInformation[i]).GetName()).ToLower() )
+				m_Found = true;
+
+			}
+
+			if (m_Found)
+			{
+				from.SendMessage( m_Curse.Name + "'s playerdata was found in the stone. Proceeding.");
+				from.SendMessage( m_Curse.Name + " has been cursed." );
+				Curse( m_Curse );
+
+			}
+			else
+			{
+				m_Stone.SaveThis( from, m_Curse );
+				from.SendMessage( "Backing up the information of {0} the stone.", m_Curse.Name );
+				from.SendMessage( m_Curse.Name + " has been cursed." );
+				Curse( m_Curse );
+			}
+
+
+		}
+
+		private void Curse( TeiravonMobile m_Curse )
+		{
+			m_Curse.RawStr = 10;
+			m_Curse.Hits = 10;
+			m_Curse.MaxHits = 10;
+			m_Curse.RawDex = 10;
+			m_Curse.Stam = 0;
+			m_Curse.MaxStam = 10;
+			m_Curse.RawInt = 10;
+			m_Curse.Mana = 10;
+			m_Curse.MaxMana = 10;
+			m_Curse.Title = "the Cursed One";
+
+			for (int i=0; i < 51; i++)
+			{
+				 m_Curse.Skills[i].Base = 0.0;
+			}
+
+			m_Curse.SendMessage( "You have been cursed by the gods!" );
+		}
+	}
+}
+
+
+
+namespace Server.Items
+{
+	public class StoneOfSaving : Item
+	{
+
+		ArrayList SavedInformation = new ArrayList();
+		private bool m_SafeGuards = true;
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool SafeGuards
+		{
+			get{ return m_SafeGuards; }
+			set{ m_SafeGuards = value; }
+		}
+
+		[Constructable]
+		public StoneOfSaving() : base( 0xED8 )
+		{
+			Name = "Stone Of Saving";
+			Hue = 0x58B;
+			LootType = LootType.Blessed;
+		}
+
+		public override void OnDoubleClick( Mobile from )
+		{
+			if ( from.AccessLevel > AccessLevel.Player )
+			{
+
+				if ( IsChildOf( from.Backpack ) || Parent == from )
+				{
+					from.SendGump( new StoneOfSavingGump( from, this, SavedInformation ) );
+
+				}
+				else
+					from.SendLocalizedMessage( 1042001 );
+			}
+
+			else
+				from.SendMessage("Only GMs can use this item!");
+		}
+
+		public void DeleteEntry( int index, Mobile from )
+		{
+			try
+			{
+				((Item)SavedInformation[index]).Delete();
+				SavedInformation.RemoveAt( index );
+			}
+			catch
+			{
+				from.SendMessage( "An error occured, please tell a scripter what you were doing." );
+			}
+	       	}
+
+
+		public override void OnAfterDelete()
+		{
+			for( int i=0; i < SavedInformation.Count; i++ )
+			{
+				try
+				{
+			      		Item s_Item = SavedInformation[i] as Item;
+			        	s_Item.Delete();
+			        }
+			        catch
+			        {
+			        }
+			}
+
+			base.OnAfterDelete();
+		}
+
+		public override void GetProperties( ObjectPropertyList list )
+		{
+			list.Add( Name );
+			//list.Add( 500928 ); //Text in menu: This is a GM only tool.
+		}
+
+
+		public void SaveThis( Mobile from, Mobile targ )
+		{
+			TeiravonMobile m_Player = targ as TeiravonMobile;
+			SavedInformation.Add( new SavedPlayer( m_Player ) );
+		}
+
+
+		public StoneOfSaving( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 1 ); // version
+
+			writer.WriteItemList( (ArrayList) SavedInformation, false );
+
+			writer.Write( (bool)m_SafeGuards );
+
+
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+
+			SavedInformation = reader.ReadItemList();
+
+			if ( version >= 1 )
+				m_SafeGuards = reader.ReadBool();
+		}
+	}
+
+
+	public class SavedPlayer : Item
+	{
+		private string PlayerName;
+		private int Exp;
+		private int Str;
+		private int Hits;
+		private int Dex;
+		private int Stam;
+		private int Int;
+		private int Mana;
+
+		private string PlayerInfo;
+		private int skillamount;
+		private double[] m_Skills = new double[51];
+
+		private int m_Class;
+		private int m_Race;
+
+		private string m_Title;
+
+		public SavedPlayer( Mobile targ ) : base( 0x186A )
+		{
+			TeiravonMobile m_Player = (TeiravonMobile) targ;
+			PlayerName = (string)m_Player.Name;
+			Exp = m_Player.PlayerExp;
+			Str = m_Player.RawStr;
+			Hits = m_Player.MaxHits;
+			Dex = m_Player.RawDex;
+			Stam = m_Player.MaxStam;
+      			Int = m_Player.RawInt;
+      			Mana = m_Player.MaxMana;
+      			m_Class = (int)m_Player.PlayerClass;
+      			m_Race = (int)m_Player.PlayerRace;
+      			m_Title = m_Player.Title;
+
+      			for (int i=0; i < 51; i++)
+			{
+				m_Skills[i] = m_Player.Skills[i].Base;
+			}
+
+			Name = String.Format( "Saved Player: {0}", PlayerName );
+			Movable = false;
+
+			Point3D p = new Point3D( 1, 1, 0 );
+			MoveToWorld( p, Map.Felucca );
+		}
+
+		public string AllInfo()
+		{
+			PlayerInfo = ( "Name: " + PlayerName + " Exp: " + Exp + " Class: " + (TeiravonMobile.Class)m_Class);
+			return PlayerInfo;
+        	}
+
+        	public string GetName()
+		{
+			return PlayerName;
+        	}
+
+        	public int GetClass()
+		{
+			return m_Class;
+        	}
+
+        	public int GetRace()
+		{
+			return m_Race;
+		}
+
+
+        	public void RestoreTargetInfo( Mobile target )
+        	{
+        		TeiravonMobile m_Restore = target as TeiravonMobile;
+        		m_Restore.Title = m_Title;
+        		m_Restore.PlayerExp = Exp;
+
+			LevelingFunctions.CheckLevelUp( m_Restore );
+
+        		m_Restore.RawStr = Str;
+        		m_Restore.MaxHits = Hits;
+        		m_Restore.RawDex = Dex;
+        		m_Restore.MaxStam = Stam;
+        		m_Restore.RawInt = Int;
+        		m_Restore.MaxMana = Mana;
+
+        		for (int i=0; i < 51; i++)
+			{
+				 m_Restore.Skills[i].Base = m_Skills[i];
+			}
+
+
+        	}
+
+        	public SavedPlayer( Serial serial ) : base( serial )
+		{
+		}
+
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+			writer.Write( (int) 0 );
+
+			writer.Write( (string) PlayerName );
+
+			writer.Write( (string) m_Title );
+
+			writer.Write( (int) m_Class );
+
+			writer.Write( (int) m_Race );
+
+			writer.Write( (int) Exp );
+
+			writer.Write( (int) Str );
+
+			writer.Write( (int) Hits );
+
+			writer.Write( (int) Dex );
+
+			writer.Write( (int) Stam );
+
+			writer.Write( (int) Int );
+
+			writer.Write( (int) Mana );
+
+			for ( int i = 0; i < 51; i++ )
+			{
+				writer.Write( (double)m_Skills[i] );
+			}
+
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+			int version = reader.ReadInt();
+
+			PlayerName = reader.ReadString();
+
+			m_Title = reader.ReadString();
+
+			m_Class = reader.ReadInt();
+
+			m_Race = reader.ReadInt();
+
+			Exp = reader.ReadInt();
+
+			Str = reader.ReadInt();
+
+			Hits = reader.ReadInt();
+
+			Dex = reader.ReadInt();
+
+			Stam = reader.ReadInt();
+
+			Int = reader.ReadInt();
+
+			Mana = reader.ReadInt();
+
+			for ( int i = 0; i < 51; i++ )
+			{
+				m_Skills[i] = reader.ReadDouble();
+			}
+
+		}
+	}
+}

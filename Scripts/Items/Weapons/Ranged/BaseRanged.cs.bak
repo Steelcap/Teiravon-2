@@ -1,0 +1,217 @@
+using System;
+using Server.Items;
+using Server.Network;
+using Server.Spells;
+using Server.Mobiles;
+
+namespace Server.Items
+{
+	public abstract class BaseRanged : BaseMeleeWeapon
+	{
+		private CraftResource m_Resource;
+
+		public abstract int EffectID{ get; }
+		public abstract Type AmmoType{ get; }
+		public abstract Item Ammo{ get; }
+
+		public override int DefHitSound{ get{ return 0x234; } }
+		public override int DefMissSound{ get{ return 0x238; } }
+
+		public override SkillName DefSkill{ get{ return SkillName.Archery; } }
+		public override WeaponType DefType{ get{ return WeaponType.Ranged; } }
+		public override WeaponAnimation DefAnimation{ get{ return WeaponAnimation.ShootXBow; } }
+
+		public override SkillName AccuracySkill{ get{ return SkillName.Archery; } }
+
+		private SkillMod m_Skilmod;
+
+		public CraftAttributeInfo GetResourceAttrs()
+		{
+			CraftResourceInfo info = CraftResources.GetInfo( m_Resource );
+
+			if ( info == null )
+				return CraftAttributeInfo.Blank;
+
+			return info.AttributeInfo;
+		}
+
+
+		public BaseRanged( int itemID ) : base( itemID )
+		{
+		}
+
+		public BaseRanged( Serial serial ) : base( serial )
+		{
+		}
+
+		public override TimeSpan OnSwing( Mobile attacker, Mobile defender )
+		{
+			// Make sure we've been standing still for one second
+			if ( DateTime.Now > (attacker.LastMoveTime + TimeSpan.FromSeconds( Core.AOS ? 0.5 : 1.0 )) || (Core.AOS && WeaponAbility.GetCurrentAbility( attacker ) is MovingShot) )
+			{
+				bool canSwing = true;
+
+				if ( Core.AOS )
+				{
+					canSwing = ( !attacker.Paralyzed && !attacker.Frozen );
+
+					if ( canSwing )
+					{
+						Spell sp = attacker.Spell as Spell;
+
+						canSwing = ( sp == null || !sp.IsCasting || !sp.BlocksMovement );
+					}
+				}
+
+				if ( canSwing && attacker.HarmfulCheck( defender ) )
+				{
+					attacker.DisruptiveAction();
+					attacker.Send( new Swing( 0, attacker, defender ) );
+
+					if ( OnFired( attacker, defender ) )
+					{
+						if ( CheckHit( attacker, defender ) )
+							OnHit( attacker, defender );
+						else
+							OnMiss( attacker, defender );
+					}
+				}
+
+				return GetDelay( attacker );
+			}
+			else
+			{
+				return TimeSpan.FromSeconds( 0.25 );
+			}
+		}
+
+		public override bool OnEquip( Mobile from )
+		{
+
+			if ( from.Player && from.AccessLevel == AccessLevel.Player )
+			{
+				TeiravonMobile m_Player = (TeiravonMobile)from;
+
+				if (  ( this is HeavyCrossbow || this is RepeatingCrossbow || this is Recurve ) && !m_Player.HasFeat( TeiravonMobile.Feats.BowSpecialization ) )
+				{
+					m_Player.SendMessage( "You don't have the skill to use this bow" );
+					return false;
+				}
+			}
+
+			return base.OnEquip( from );
+		}
+
+
+		public override void OnAdded( object parent )
+		{
+
+			if (parent is TeiravonMobile)
+			{
+				TeiravonMobile m_parent = (TeiravonMobile)parent;
+
+				if ( ( m_parent.IsElf() ) && ( this is Bow || this is Longbow || this is CompositeBow || this is Recurve ) )
+				{
+					if ( m_Skilmod != null )
+						m_Skilmod.Remove();
+
+					m_Skilmod = new DefaultSkillMod( SkillName.Archery, true, 10.0 );
+					((Mobile)parent).AddSkillMod( m_Skilmod );
+
+					m_parent.SendMessage( 0x9F2, "The bow hums in your hand..." );
+				}
+
+			}
+
+			base.OnAdded( parent );
+		}
+
+		public override void OnRemoved( object parent )
+		{
+			base.OnRemoved( parent );
+
+			if ( m_Skilmod != null )
+				m_Skilmod.Remove();
+
+			m_Skilmod = null;
+		}
+
+
+		public override void OnHit( Mobile attacker, Mobile defender )
+		{
+			if ( attacker.Player && !defender.Player && (defender.Body.IsAnimal || defender.Body.IsMonster) && 0.4 >= Utility.RandomDouble() )
+				defender.AddToBackpack( Ammo );
+
+			base.OnHit( attacker, defender );
+		}
+
+		public override void OnMiss( Mobile attacker, Mobile defender )
+		{
+			if ( attacker.Player && 0.4 >= Utility.RandomDouble() )
+				Ammo.MoveToWorld( new Point3D( defender.X + Utility.RandomMinMax( -1, 1 ), defender.Y + Utility.RandomMinMax( -1, 1 ), defender.Z ), defender.Map );
+
+			base.OnMiss( attacker, defender );
+		}
+
+		public virtual bool OnFired( Mobile attacker, Mobile defender )
+		{
+			Container pack = attacker.Backpack;
+
+			if ( attacker.InRange( defender.Location, 2 ) )
+				return false;
+
+			if ( attacker.Player && (pack == null || !pack.ConsumeTotal( AmmoType, 1 )) )
+				return false;
+
+			attacker.MovingEffect( defender, EffectID, 18, 1, false, false );
+
+			return true;
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 2 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+
+			switch ( version )
+			{
+				case 2:
+				case 1:
+				{
+					break;
+				}
+				case 0:
+				{
+					/*m_EffectID =*/ reader.ReadInt();
+					break;
+				}
+			}
+
+			if ( version < 2 )
+			{
+				WeaponAttributes.MageWeapon = 0;
+				WeaponAttributes.UseBestSkill = 0;
+			}
+
+			if (Parent is TeiravonMobile)
+			{
+				TeiravonMobile m_parent = (TeiravonMobile)Parent;
+
+				if ( m_parent.IsElf() )
+				{
+					m_Skilmod = new DefaultSkillMod( SkillName.Archery, true, 10.0 );
+					((Mobile)Parent).AddSkillMod( m_Skilmod );
+				}
+			}
+
+		}
+	}
+}

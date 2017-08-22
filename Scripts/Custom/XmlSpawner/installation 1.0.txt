@@ -1,0 +1,390 @@
+INSTALLATION:
+for RunUO 1.0.0.
+
+STEP 1:
+With a fresh 1.0.0 install, simply unzip the contents of the package into your custom scripts directory. 
+
+The xmlspawner2-vxxx-1of3.zip file is a necessary part of the installation.
+The xmlspawner2-vxxx-2of3.zip file is a necessary part of the installation.
+The xmlspawner2-vxxx-3of3.zip file is a necessary part of the installation.
+The xmlspawner2-support.zip file is a recommended part of the installation.
+The xmlspawner2-xmlextras.zip is completely optional containing .xml file examples of some of the spawner capabilities as well as other spawn files.  Make a folder called Spawns in the main RunUO installation directory (where your server.exe is) and place the .xml files in there.  Then make a folder named XmlQuestNPC in the main RunUO installation directory and place the .npc files there.
+Test them out by using the [xmlload command on the example .xml files.  Most of these will load up in Green Acres. You can also use the [xmlloadhere command to force them to load at your current location.
+
+Note, XmlSpawner2 is fully compatible with all existing xml spawn file descriptions and can also co-exist with the standard distribution spawners and other spawners.
+You can use xmlspawners and other spawners at the same time if you like.
+
+Additional Recommended Steps:
+If you install the recommended support files, please go through these steps.
+
+If you have installed xmlspawner2-support.zip you MUST either follow Step 4 or get rid of the custom container.cs and stealing.cs files from this package.
+If you plan on spawning rares or any items with long spawn cycles I would strongly recommend that you follow installation step 4.  You can find the reason for this described at the end of this document in the section "FIX FOR STOLEN/TAKEN ITEM SPAWNS THAT REMAIN UNDER SPAWNER CONTROL"
+
+
+STEP 2: (recommended but not required)
+To take advantage of the XmlQuestToken killtask keywords KILL and KILLNAMED, one line must be added to the OnDeath method in BaseCreature.cs as described below (note, you dont have to make this mod if you dont want to, the spawner and other items will work just fine without it, the KILL and KILLNAMED features simply wont do anything)
+
+around line 3883 of basecreature.cs change
+
+Titles.AwardKarma( ds.m_Mobile, totalKarma, true );
+
+to
+
+Titles.AwardKarma( ds.m_Mobile, totalKarma, true );
+// modification to support XmlQuest Killtasks
+XmlQuest.RegisterKill( this, ds.m_Mobile);
+
+
+
+STEP 3: (NOT recommended but allowed)
+In order to provide the book extended text entry interface, xmlspawner replaces the default packet handler for basebooks.  While this does not affect the behavior of standard books in any way, if you DONT want this mod, comment out the following line at line 26 in PacketHandlerOverrides.cs
+If you comment out this line then you will NOT be able to edit spawner entries using the book interface.
+
+// Timer.DelayCall( TimeSpan.Zero, new TimerCallback( ContentChangeOverride ) );
+
+
+STEP 4: (recommended but not required)
+To take advantage of the stealable rares/artifacts system and the support for eliminating issues of maintained spawner control over items, either replace the 1.0.0 distribution files container.cs (Scripts/Items/Containers/Container.cs) and stealing.cs (Scripts/Skills/Stealing.cs) with the versions found in xmlspawner2-support.zip (always keep backups of the originals), or the simpler way is to just change the extension of the distro files to something other than .cs
+
+
+STEP 5: (recommended but not required)
+To take advantage of spawner triggering on skill use you must change 4 lines in Scripts/Misc/SkillCheck.cs (note, you dont have to make this mod if you dont want to, the spawner and other items will work just fine without it, the SkillTriggering features simply wont do anything). Near the beginning of the file at line 73 change these lines. 
+
+public static void Initialize()
+{
+Mobile.SkillCheckLocationHandler = new SkillCheckLocationHandler( Mobile_SkillCheckLocation );
+Mobile.SkillCheckDirectLocationHandler = new SkillCheckDirectLocationHandler( Mobile_SkillCheckDirectLocation );
+
+Mobile.SkillCheckTargetHandler = new SkillCheckTargetHandler( Mobile_SkillCheckTarget );
+Mobile.SkillCheckDirectTargetHandler = new SkillCheckDirectTargetHandler( Mobile_SkillCheckDirectTarget );
+}
+
+to this
+
+public static void Initialize()
+{
+// Begin mod to enable XmlSpawner skill triggering
+Mobile.SkillCheckLocationHandler = new SkillCheckLocationHandler( XmlSpawnerSkillCheck.Mobile_SkillCheckLocation );
+Mobile.SkillCheckDirectLocationHandler = new SkillCheckDirectLocationHandler( XmlSpawnerSkillCheck.Mobile_SkillCheckDirectLocation );
+
+Mobile.SkillCheckTargetHandler = new SkillCheckTargetHandler( XmlSpawnerSkillCheck.Mobile_SkillCheckTarget );
+Mobile.SkillCheckDirectTargetHandler = new SkillCheckDirectTargetHandler( XmlSpawnerSkillCheck.Mobile_SkillCheckDirectTarget );
+// End mod to enable XmlSpawner skill triggering
+}
+
+
+STEP 6: (recommended but not required)
+To allow the XmlQuest killtask keywords KILL and KILLNAMED to be applied to players providing a contract kill system, one line must be added to ReportMurderer.cs (Scripts/Gumps/ReportMurderer.cs) as described below (note, you dont have to make this mod if you dont want to, the spawner and other items will work just fine without it, the KILL and KILLNAMED features simply wont work when specifying players as the targets).
+This is also required to allow the attachment system to register kills (through the OnKill or OnKilled methods).  Some addons such as XmlPoints require this.
+
+around line 64 of ReportMurderer.cs change
+
+Titles.AwardKarma( g, karmaAward, true );
+
+to
+
+Titles.AwardKarma( g, karmaAward, true );
+// modification to support XmlQuest Killtasks of players
+Server.Items.XmlQuest.RegisterKill( m, g);
+
+
+
+STEP 7: (recommended but not required)
+To allow attachments to be triggered on weapon hits, one line must be added to BaseWeapon.cs (Scripts/Items/Weapons/BaseWeapon.cs) as described below (note, you dont have to make this mod if you dont want to, the spawner and other items will work just fine without it, the attachment OnWeaponHit method simply wont be called so attachments such as XmlMinionStrike will not work) 
+
+around line 1351 of BaseWeapon.cs at the end of the OnHit method, change
+
+if ( a != null )
+	a.OnHit( attacker, defender, damage );
+
+to
+
+if ( a != null )
+	a.OnHit( attacker, defender, damage );				
+// hook for attachment OnWeaponHit method
+Server.Engines.XmlSpawner2.XmlAttach.OnWeaponHit(this, attacker, defender, damageGiven);
+
+
+STEP 8: (recommended but not required)
+To allow the ItemIdentification skill to be used to reveal attachments on items/mobs, one line must be added to ItemIdentification.cs (Scripts/Skills/ItemIdentification.cs) as described below. (note, you dont have to make this mod if you dont want to, the spawner and other items will work just fine without it, players just wont be able to see what attachments are on an item/mob using this skill).
+
+around line 50 of ItemIdentification.cs change
+
+else if ( o is Mobile )
+{
+	((Mobile)o).OnSingleClick( from );
+}
+	else
+{
+	from.SendLocalizedMessage( 500353 ); // You are not certain...
+}
+
+to
+
+else if ( o is Mobile )
+{
+	((Mobile)o).OnSingleClick( from );
+}
+	else
+{
+	from.SendLocalizedMessage( 500353 ); // You are not certain...
+}
+//allows the identify skill to reveal attachments
+Server.Engines.XmlSpawner2.XmlAttach.RevealAttachments(from,o);
+
+
+STEP 9: (recommended but not required)
+To allow attachments to make use of the OnEquip and OnRemoved methods, the following 8 changes must be made in three files, BaseArmor.cs, BaseWeapon.cs, and BaseJewel.cs. (note, you dont have to make this mod if you dont want to, the spawner and other items/attachments will work just fine without it, you just wont be able to use certain attachments that make use of this feature such as XmlFactionEquip).
+
+around line 1167 of BaseArmor.cs (Scripts/Items/Armor/BaseArmor.cs) at the end of the CanEquip method change
+
+	return base.CanEquip( from );
+
+to
+
+	// XmlAttachment check for CanEquip
+	if(!Server.Engines.XmlSpawner2.XmlAttach.CheckCanEquip(this, from))
+	{
+        	return false;
+	} else
+	{
+
+		return base.CanEquip( from );
+	}
+
+
+around line 1206 of BaseArmor.cs (Scripts/Items/Armor/BaseArmor.cs) at the end of the OnEquip method change
+
+
+	return base.OnEquip( from );
+
+to
+
+
+	// XmlAttachment check for OnEquip
+        Server.Engines.XmlSpawner2.XmlAttach.CheckOnEquip(this, from);
+
+	return base.OnEquip( from );
+
+
+around line 1227 of BaseArmor.cs (Scripts/Items/Armor/BaseArmor.cs) at the end of the OnRemoved method change
+
+
+	base.OnRemoved( parent );
+
+to
+
+	// XmlAttachment check for OnRemoved
+	Server.Engines.XmlSpawner2.XmlAttach.CheckOnRemoved(this, parent);
+
+	base.OnRemoved( parent );
+
+
+around line 515 of BaseWeapon.cs (Scripts/Items/Weapons/BaseWeapon.cs) at the end of the CanEquip method change
+
+	{
+		return base.CanEquip( from );
+	}
+
+to
+
+	// XmlAttachment check for CanEquip
+	if(!Server.Engines.XmlSpawner2.XmlAttach.CheckCanEquip(this, from))
+	{
+        	return false;
+	} else
+	{
+		return base.CanEquip( from );
+	}
+
+
+around line 563 of BaseWeapon.cs (Scripts/Items/Weapons/BaseWeapon.cs) at the end of the OnEquip method change
+
+	return true;
+
+to
+
+	// XmlAttachment check for OnEquip
+	Server.Engines.XmlSpawner2.XmlAttach.CheckOnEquip(this, from);
+
+	return true;
+
+
+around line 614 of BaseWeapon.cs (Scripts/Items/Weapons/BaseWeapon.cs) at the end of the OnRemoved method change
+
+			m.Delta( MobileDelta.WeaponDamage );
+		}
+	}
+
+to
+
+			m.Delta( MobileDelta.WeaponDamage );
+		}
+		// XmlAttachment check for OnRemoved
+		Server.Engines.XmlSpawner2.XmlAttach.CheckOnRemoved(this, parent);
+	}
+
+
+around line 121 (RC0) of BaseJewel.cs (Scripts/Items/Jewels/BaseJewel.cs) at the end of the OnAdded method change
+
+			from.CheckStatTimers();
+		}
+	}
+
+to
+
+
+			from.CheckStatTimers();
+		}
+
+    		// XmlAttachment check for OnEquip and CanEquip
+		if(parent is Mobile)
+    		{
+        		if(Server.Engines.XmlSpawner2.XmlAttach.CheckCanEquip(this, (Mobile)parent))
+        		{
+        			Server.Engines.XmlSpawner2.XmlAttach.CheckOnEquip(this, (Mobile)parent);
+        		} else
+        		{
+        			((Mobile)parent).AddToBackpack(this);
+        		}
+    		}
+	}
+
+
+around line 139 of BaseJewel.cs (Scripts/Items/Jewels/BaseJewel.cs) at the end of the OnRemoved method change
+
+			from.CheckStatTimers();
+		}
+	}
+
+to
+
+			from.CheckStatTimers();
+		}
+
+		// XmlAttachment check for OnRemoved
+		Server.Engines.XmlSpawner2.XmlAttach.CheckOnRemoved(this, parent);
+	}
+
+STEP 10: (recommended but not required)
+To allow attachments to make use of the OnArmorHit methods, the following changes must be made in BaseWeapon.cs.(note, you dont have to make this mod if you dont want to, the spawner and other items/attachments will work just fine without it, you just wont be able to use features of certain attachments that require this such as XmlCustomAttacks).
+
+in the AbsorbDamage method around line 1000 of BaseWeapon.cs (Scripts/Items/Weapons/BaseWeapon.cs) change
+
+
+	int virtualArmor = defender.VirtualArmor + defender.VirtualArmorMod;
+
+
+to
+
+	// XmlAttachment check for OnArmorHit
+	damage -= Server.Engines.XmlSpawner2.XmlAttach.OnArmorHit(attacker, defender, armor, this, damage);
+	damage -= Server.Engines.XmlSpawner2.XmlAttach.OnArmorHit(attacker, defender, shield, this, damage);
+
+	int virtualArmor = defender.VirtualArmor + defender.VirtualArmorMod;
+
+
+at the beginning of the AbsorbDamageAOS method around line 876 of BaseWeapon.cs  change
+
+	double positionChance = Utility.RandomDouble();
+	BaseArmor armor;
+
+to
+
+	double positionChance = Utility.RandomDouble();
+	BaseArmor armor;
+	int originaldamage = damage;
+
+
+in the AbsorbDamageAOS method around line 892 of BaseWeapon.cs  change
+
+	if ( armor != null )
+		armor.OnHit( this, damage ); // call OnHit to lose durability
+
+to
+
+	if ( armor != null )
+	{
+		armor.OnHit( this, damage ); // call OnHit to lose durability
+
+		// XmlAttachment check for OnArmorHit
+		damage -= Server.Engines.XmlSpawner2.XmlAttach.OnArmorHit(attacker, defender, armor, this, originaldamage);
+	}
+
+
+in the AbsorbDamageAOS method around line 932 of BaseWeapon.cs  change
+
+	if ( Type == WeaponType.Bashing )
+		wear = absorbed / 2;
+	else
+		wear = Utility.Random( 2 );
+
+to
+
+	if ( Type == WeaponType.Bashing )
+		wear = absorbed / 2;
+	else
+		wear = Utility.Random( 2 );
+
+	// XmlAttachment check for OnArmorHit
+	Server.Engines.XmlSpawner2.XmlAttach.OnArmorHit(attacker, defender, shield, this, originaldamage);
+
+
+STEP 11: (recommended but not required)
+To allow attachment properties on weapons/armor to be automatically displayed in the properties list on mouseover/click, these changes must be made to BaseWeapon.cs (Scripts/Items/Weapons/BaseWeapon.cs), BaseArmor.cs (Scripts/Items/Armor/BaseArmor.cs) and BaseJewel.cs (Scripts/Items/Jewels/BaseJewel.cs) described below. (note, you dont have to make this mod if you dont want to, the spawner and other items will work just fine without it, players just wont automatically see attachment properties on items with attachments).
+
+
+at the end of the GetProperties method around line 2823 of BaseWeapon.cs change
+
+	if ( m_Hits > 0 && m_MaxHits > 0 )
+		list.Add( 1060639, "{0}\t{1}", m_Hits, m_MaxHits ); // durability ~1_val~ / ~2_val~
+
+to
+
+	if ( m_Hits > 0 && m_MaxHits > 0 )
+		list.Add( 1060639, "{0}\t{1}", m_Hits, m_MaxHits ); // durability ~1_val~ / ~2_val~
+
+	// mod to display attachment properties
+	Server.Engines.XmlSpawner2.XmlAttach.AddAttachmentProperties(this, list);
+
+
+at the end of the GetProperties method around line 1488 of BaseArmor.cs change
+
+	if ( m_HitPoints > 0 && m_MaxHitPoints > 0 )
+		list.Add( 1060639, "{0}\t{1}", m_HitPoints, m_MaxHitPoints ); // durability ~1_val~ / ~2_val~
+
+to
+
+	if ( m_HitPoints > 0 && m_MaxHitPoints > 0 )
+		list.Add( 1060639, "{0}\t{1}", m_HitPoints, m_MaxHitPoints ); // durability ~1_val~ / ~2_val~
+			
+	// mod to display attachment properties
+	Server.Engines.XmlSpawner2.XmlAttach.AddAttachmentProperties(this, list);
+
+at the end of the GetProperties method around line 226 of BaseJewel.cs change
+
+
+	base.AddResistanceProperties( list );
+to
+
+	base.AddResistanceProperties( list );
+			
+        // mod to display attachment properties
+        Server.Engines.XmlSpawner2.XmlAttach.AddAttachmentProperties(this, list);
+
+
+STEP 12: (recommended but not required)
+To prevent Paragons and rummaging mobs from being despawned due to smartspawning, add this property to BaseCreature.cs anywhere within the BaseCreature class.  The reason for this is that rummaging mobs may pick up items from player corpses and you dont want to have them despawn with those items.  Paragons should be excluded because the OnBeforeSpawn and OnAfterSpawn methods are not called when smartspawning, so if they despawn, they will not come back as paragons.
+
+public virtual bool HoldSmartSpawning
+        {
+            get{
+                // dont smartspawn paragons
+                if(IsParagon) return true;
+
+		// dont smartspawn rummaging mobs
+		if(CanRummageCorpses) return true;
+
+                return false;
+            }
+        }

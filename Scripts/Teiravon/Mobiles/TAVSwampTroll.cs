@@ -1,0 +1,73 @@
+using System;
+using System.Collections;
+using Server.Items;
+using Server.Targeting;
+
+namespace Server.Mobiles
+{
+	[CorpseName( "a swamp troll corpse" )]
+	public class SwampTroll : BaseCreature
+	{
+		[Constructable]
+		public SwampTroll() : base( AIType.AI_Melee, FightMode.Closest, 10, 1, 0.2, 0.4 )
+		{
+			Name = "a swamp troll";
+			Body = 764;
+			BaseSoundID = 461;
+			Hue = 2559;
+			Level = 10;
+
+			SetStr( 227, 265 );
+			SetDex( 66, 85 );
+			SetInt( 46, 70 );
+
+			SetHits( 240, 356 );
+
+			SetDamage( 16, 24 );
+
+			SetDamageType( ResistanceType.Physical, 75 );
+			SetDamageType( ResistanceType.Cold, 25 );
+
+			SetResistance( ResistanceType.Physical, 45, 55 );
+			SetResistance( ResistanceType.Cold, 40, 50 );
+			SetResistance( ResistanceType.Poison, 5, 10 );
+			SetResistance( ResistanceType.Energy, 5, 10 );
+
+			SetSkill( SkillName.MagicResist, 65.1, 80.0 );
+			SetSkill( SkillName.Tactics, 80.1, 100.0 );
+			SetSkill( SkillName.Wrestling, 80.1, 100.0 );
+
+			Fame = 4000;
+			Karma = -4000;
+
+			VirtualArmor = 50;
+
+			PackItem( new Hatchet() ); // TODO: Weapon??
+			PackItem( new TrollLiver());
+		}
+
+		public override void GenerateLoot()
+		{
+			AddLoot( LootPack.Poor );
+		}
+		public override HideType HideType{ get{ return HideType.Spined; } }
+		public override int Hides{ get{ return 15; } }
+		public override int Meat{ get{ return 10; } }
+
+		public SwampTroll( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+			writer.Write( (int) 0 );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+			int version = reader.ReadInt();
+		}
+	}
+}

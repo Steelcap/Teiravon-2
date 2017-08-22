@@ -1,0 +1,991 @@
+using System;
+using Server;
+using Server.Mobiles;
+using Server.Gumps;
+
+namespace Server.Items
+{
+	public class AlchemyTome : Item
+	{
+		private ulong m_Formulas = 0x0;
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public ulong Formulas{ get { return m_Formulas; } set { m_Formulas = value; } }
+
+		public override void OnDoubleClick( Mobile from )
+		{
+			if ( from.Player )
+			{
+				TeiravonMobile m_Player = (TeiravonMobile)from;
+
+				if ( !m_Player.IsAlchemist() && !m_Player.HasFeat( TeiravonMobile.Feats.AlchemyScience ) )
+					m_Player.SendMessage( "It confuses you." );
+				else if ( Formulas == 0 )
+					m_Player.SendMessage( "The tome is empty." );
+				else
+				//	m_Player.SendGump( new AlchemyTomeGump( m_Player, Formulas ) );
+					m_Player.SendMessage( "Double-click your mortar and pestle instead." );
+			}
+		}
+
+		[Constructable]
+		public AlchemyTome() : base( 8787 )
+		{
+			Name = "Alchemy Tome";
+			Hue = 0x9FF;
+			LootType = LootType.Blessed;
+		}
+
+		public AlchemyTome( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( m_Formulas );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			m_Formulas = reader.ReadULong();
+
+			if ( LootType != LootType.Blessed )
+				LootType = LootType.Blessed;
+		}
+
+		private class AlchemyTomeGump : Gump
+		{
+			public AlchemyTomeGump( TeiravonMobile m_Player, ulong m_Formulas ) : base( 40, 40 )
+			{
+				m_Player.CloseGump( typeof( AlchemyTomeGump ) );
+				AddPage( 0 );
+				AddImage( 40, 40, 2201 );
+
+				ListPotion( "Refresh", "1 Bottle", "1 Black Pearl", null, null, false );
+
+				/*for ( ulong i = 0x0; i <= m_Formulas; i *= 2 )
+				{
+					AddPage( page += 1 );
+				}*/
+			}
+
+			public override void OnResponse( Server.Network.NetState sender, RelayInfo info )
+			{
+			}
+
+			private void ListPotion( string name, string ing1, string ing2, string ing3, string ing4, bool right )
+			{
+				if ( !right )
+				{
+					// Left Side
+					AddLabel( 98, 60, 0, name );
+
+					AddImage( 113, 92, 3848 );		// Bottle
+					AddImage( 70, 216, 4014 );		// Arrow
+
+					AddLabel( 72, 118, 0, ing1 );
+					AddLabel( 72, 138, 0, ing2 );
+					AddLabel( 72, 158, 0, ing3 );
+					AddLabel( 72, 178, 0, ing4 );
+				} else {
+
+					// Right Side
+					AddLabel( 266, 60, 0, name );
+
+					AddImage( 281, 92, 3848 );		// Bottle
+					AddImage( 334, 216, 4005 );		// Arrow
+
+					AddLabel( 231, 118, 0, ing1 );
+					AddLabel( 231, 138, 0, ing2 );
+					AddLabel( 231, 158, 0, ing3 );
+					AddLabel( 231, 178, 0, ing4 );
+				}
+			}
+		}
+	}
+
+	public class BaseAlchemyFormula : Item
+	{
+		private ulong m_Formula = 0x0;
+		private string m_RealName;
+		private bool m_Identified = false;
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public ulong Formula { get { return m_Formula; } set { m_Formula = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public string RealName { get { return m_RealName; } set { m_RealName = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool Identified { get { return m_Identified; } set { m_Identified = value; InvalidateProperties(); } }
+
+		public override void GetProperties( ObjectPropertyList list )
+		{
+			base.GetProperties( list );
+
+			if ( Identified )
+				list.Add( m_RealName );
+		}
+
+		public override bool OnDroppedOnto( Mobile m_Player, Item target )
+		{
+			if ( target is AlchemyTome && target.RootParent == m_Player )
+			{
+				AlchemyTome m_Tome = (AlchemyTome)target;
+
+				if ( !Identified )
+					m_Player.SendMessage( "You should probably decipher what it is before trying to add it." );
+				else if ( ( m_Tome.Formulas & Formula ) == 0 )
+				{
+					m_Player.SendMessage( "You've added the {0} formula to the tome.", m_RealName );
+					m_Tome.Formulas |= m_Formula;
+
+					this.Delete();
+					return true;
+				} else {
+					m_Player.SendMessage( "This tome already contains the formula for the {0}.", m_RealName );
+				}
+			} else {
+				m_Player.SendMessage( "Drag and drop the formula onto an Alchemy Tome in your pack to add it." );
+			}
+
+			return base.OnDroppedOnto( m_Player, target );
+		}
+
+		public BaseAlchemyFormula() : this( 0x14ED )
+		{
+		}
+
+		public BaseAlchemyFormula( int itemid ) : base( itemid )
+		{
+			Name = "a sealed scroll";
+		}
+
+		public BaseAlchemyFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( m_Formula );
+			writer.Write( m_RealName );
+			writer.Write( m_Identified );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			m_Formula = reader.ReadULong();
+			m_RealName = reader.ReadString();
+			m_Identified = reader.ReadBool();
+		}
+	}
+
+	public class RefreshFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public RefreshFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x1;
+			RealName = "refresh potion";
+		}
+
+		public RefreshFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class GreaterRefreshFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public GreaterRefreshFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x2;
+			RealName = "greater refresh potion";
+		}
+
+		public GreaterRefreshFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class AgilityFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public AgilityFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x4;
+			RealName = "agility potion";
+		}
+
+		public AgilityFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+
+	public class GreaterAgilityFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public GreaterAgilityFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x8;
+			RealName = "greater agility potion";
+		}
+
+		public GreaterAgilityFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class NightSightFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public NightSightFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x10;
+			RealName = "night sight potion";
+		}
+
+		public NightSightFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class LesserHealFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public LesserHealFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x20;
+			RealName = "lesser heal potion";
+		}
+
+		public LesserHealFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class HealFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public HealFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x40;
+			RealName = "heal potion";
+		}
+
+		public HealFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class GreaterHealFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public GreaterHealFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x80;
+			RealName = "greater heal potion";
+		}
+
+		public GreaterHealFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class StrengthFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public StrengthFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x100;
+			RealName = "strength potion";
+		}
+
+		public StrengthFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class GreaterStrengthFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public GreaterStrengthFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x200;
+			RealName = "greater strength potion";
+		}
+
+		public GreaterStrengthFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class LesserPoisonFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public LesserPoisonFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x400;
+			RealName = "lesser poison potion";
+		}
+
+		public LesserPoisonFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class PoisonFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public PoisonFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x800;
+			RealName = "poison potion";
+		}
+
+		public PoisonFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class GreaterPoisonFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public GreaterPoisonFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x1000;
+			RealName = "greater poison potion";
+		}
+
+		public GreaterPoisonFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class DeadlyPoisonFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public DeadlyPoisonFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x2000;
+			RealName = "deadly poison potion";
+		}
+
+		public DeadlyPoisonFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class LesserCureFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public LesserCureFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x4000;
+			RealName = "lesser cure potion";
+		}
+
+		public LesserCureFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class CureFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public CureFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x8000;
+			RealName = "cure potion";
+		}
+
+		public CureFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class GreaterCureFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public GreaterCureFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x10000;
+			RealName = "greater cure potion";
+		}
+
+		public GreaterCureFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class LesserExplosionFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public LesserExplosionFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x20000;
+			RealName = "lesser explosion potion";
+		}
+
+		public LesserExplosionFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class ExplosionFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public ExplosionFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x40000;
+			RealName = "explosion potion";
+		}
+
+		public ExplosionFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class GreaterExplosionFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public GreaterExplosionFormula()
+		{
+			Name = "a sealed scroll";
+			Formula = 0x80000;
+			RealName = "greater explosion potion";
+		}
+
+		public GreaterExplosionFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class ChameleonFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public ChameleonFormula() : base( 0x227B )
+		{
+			Name = "a sealed scroll";
+			Formula = 0x100000;
+			RealName = "chameleon potion";
+		}
+
+		public ChameleonFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class LesserFloatFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public LesserFloatFormula() : base( 0x227B )
+		{
+			Name = "a sealed scroll";
+			Formula = 0x200000;
+			RealName = "lesser float potion";
+		}
+
+		public LesserFloatFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class FloatFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public FloatFormula() : base( 0x227B )
+		{
+			Name = "a sealed scroll";
+			Formula = 0x400000;
+			RealName = "float potion";
+		}
+
+		public FloatFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class GreaterFloatFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public GreaterFloatFormula() : base( 0x227B )
+		{
+			Name = "a sealed scroll";
+			Formula = 0x800000;
+			RealName = "greater float potion";
+		}
+
+		public GreaterFloatFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class SustenanceFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public SustenanceFormula() : base( 0x227B )
+		{
+			Name = "a sealed scroll";
+			Formula = 0x1000000;
+			RealName = "sustenance potion";
+		}
+
+		public SustenanceFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class GreaterSustenanceFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public GreaterSustenanceFormula() : base( 0x227B )
+		{
+			Name = "a sealed scroll";
+			Formula = 0x2000000;
+			RealName = "greater sustenance potion";
+		}
+
+		public GreaterSustenanceFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class GenderSwapFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public GenderSwapFormula() : base( 0x227B )
+		{
+			Name = "a sealed scroll";
+			Formula = 0x4000000;
+			RealName = "gender swap potion";
+		}
+
+		public GenderSwapFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class InvisibilityFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public InvisibilityFormula() : base( 0x227B )
+		{
+			Name = "a sealed scroll";
+			Formula = 0x8000000;
+			RealName = "invisibility potion";
+		}
+
+		public InvisibilityFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class ManaRefreshFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public ManaRefreshFormula() : base( 0x227B )
+		{
+			Name = "a sealed scroll";
+			Formula = 0x10000000;
+			RealName = "mana refresh potion";
+		}
+
+		public ManaRefreshFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class TotalManaRefreshFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public TotalManaRefreshFormula() : base( 0x227B )
+		{
+			Name = "a sealed scroll";
+			Formula = 0x20000000;
+			RealName = "total mana refresh potion";
+		}
+
+		public TotalManaRefreshFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class MagicResistFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public MagicResistFormula() : base( 0x227B )
+		{
+			Name = "a sealed scroll";
+			Formula = 0x40000000;
+			RealName = "magic resist potion";
+		}
+
+		public MagicResistFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+
+	public class InvulnerabilityFormula : BaseAlchemyFormula
+	{
+		[Constructable]
+		public InvulnerabilityFormula() : base( 0x227B )
+		{
+			Name = "a sealed scroll";
+			Formula = 0x80000000;
+			RealName = "invulnerability potion";
+		}
+
+		public InvulnerabilityFormula( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+		}
+	}
+}

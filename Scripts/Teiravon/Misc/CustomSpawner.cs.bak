@@ -1,0 +1,1084 @@
+using System;
+using System.Collections;
+using System.Reflection;
+using Server;
+using Server.Scripts.Commands;
+using Server.Items;
+using Server.Mobiles;
+using Server.Targeting;
+using Server.Guilds;
+using Server.Menus.Questions;
+
+using Race = Server.Mobiles.TeiravonMobile.Race;
+using Class = Server.Mobiles.TeiravonMobile.Class;
+
+namespace Server.Items
+{
+	public class CustomNPCSpawner : Spawner
+	{
+		#region CopySkills Command
+		public static void Initialize()
+		{
+			Commands.Register( "CopySkills", AccessLevel.GameMaster, new CommandEventHandler( CopySkills_OnCommand ) );
+		}
+		
+		private static void CopySkills_OnCommand( CommandEventArgs e )
+		{
+			e.Mobile.Target = new InternalTarget( null, null );
+			e.Mobile.SendMessage( "Select a Custom NPC Spawner or Mobile." );
+		}
+		
+		private class InternalTarget : Target
+		{
+			Mobile m_Mobile;
+			CustomNPCSpawner m_Spawner;
+			
+			public InternalTarget( Mobile m, CustomNPCSpawner s ) : base( -1, false, TargetFlags.None )
+			{
+				m_Mobile = m;
+				m_Spawner = s;
+			}
+			
+			protected override void OnTarget( Mobile from, object targeted )
+			{
+				if ( targeted is Mobile && m_Mobile == null )
+					m_Mobile = (Mobile)targeted;
+				else if ( targeted is Mobile && m_Mobile != null )
+					from.SendMessage( "You can't select two mobiles." );
+				else if ( targeted is CustomNPCSpawner && m_Spawner == null )
+					m_Spawner = (CustomNPCSpawner)targeted;
+				else if ( targeted is CustomNPCSpawner && m_Spawner != null )
+					from.SendMessage( "You can't select two spawners." );
+				else if ( !( targeted is CustomNPCSpawner ) || !( targeted is Mobile ) )
+					from.SendMessage( "You must select a custom NPC spawner or mobile." );
+				
+				if ( m_Mobile == null && m_Spawner == null )
+				{
+					from.SendMessage( "Select a Custom NPC Spawner or Mobile." );
+					from.Target = new InternalTarget( null, null );
+					
+				} else if ( m_Mobile == null && m_Spawner != null ) {
+					from.SendMessage( "Select a Mobile to copy skills from." );
+					from.Target = new InternalTarget( null, m_Spawner );
+				} else if ( m_Spawner == null && m_Mobile != null ) {
+					from.SendMessage( "Select a Custom NPC Spawner to copy skills to." );
+					from.Target = new InternalTarget( m_Mobile, null );
+				} else if ( m_Spawner != null && m_Mobile != null ) {
+					
+					for ( int i = 0; i < m_Mobile.Skills.Length - 1; i++ )
+						m_Spawner.Skills[ i ] = m_Mobile.Skills[ i ].Value;
+					
+					from.SendMessage( "Setting skills..." );
+				}
+			}
+		}
+		#endregion
+
+		public enum HairType
+		{
+			None = 0,
+			Bald,
+
+			ShortHair,
+			PageboyHair,
+			Mohawk,
+			LongHair,
+			Afro,
+			KrisnaHair,
+			PonyTail,
+			TwoPigTails,
+			ReceedingHair
+		}
+
+		public enum BeardType
+		{
+			None = 0,
+
+			Goatee,
+			MediumShortBeard,
+			Vandyke,
+			LongBeard,
+			ShortBeard,
+			MediumLongBeard ,
+			Mustache
+		}
+
+		private int m_Str = 100;
+		private int m_Dex = 100;
+		private int m_Int = 100;
+		private int m_Hits = 100;
+		private int m_Stam = 100;
+		private int m_Mana = 100;
+		private int m_Hue = 0;
+		private int m_HairHue = 0;
+		private int m_Body = 0x190;
+		private int m_Fame = 0;
+		private int m_Karma = 0;
+		private int m_MountID = 0;
+		private int m_MountHue = 0;
+		private int m_Level = 10;
+		private int m_RangeFight = 1;
+		private int m_RangePerception = 10;
+		private bool m_Female = false;
+		private bool m_Mounted = false;
+		private bool m_SmartCombat = false;
+		private string m_Name = "Random";
+		private string m_Title = "";
+		private double[] m_Skills = new double[ 53 ];
+		private FightMode m_FightMode = FightMode.None;
+		private AIType m_AIType = AIType.AI_Melee;
+		private Container m_Container = null;
+		private HairType m_HairType = HairType.None;
+		private BeardType m_BeardType = BeardType.None;
+		private GuardControl m_GuardControl = null;
+
+		public double[] Skills { get { return m_Skills; } set { m_Skills = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int Level { get { return m_Level; } set { m_Level = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int Str { get { return m_Str; } set { m_Str = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int Dex { get { return m_Dex; } set { m_Dex = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int Int { get { return m_Int; } set { m_Int = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int Hits { get { return m_Hits; } set { m_Hits = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int Stam { get { return m_Stam; } set { m_Stam = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int Mana { get { return m_Mana; } set { m_Mana = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int NPCHue { get { return m_Hue; } set { m_Hue = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int NPCHairHue { get { return m_HairHue; } set { m_HairHue = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int Body { get { return m_Body; } set { m_Body = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int Fame { get { return m_Fame; } set { m_Fame = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int Karma { get { return m_Karma; } set { m_Karma = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int MountID{ get { return m_MountID; } set { m_MountID = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int MountHue { get { return m_MountHue; } set { m_MountHue = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int RangeFight { get { return m_RangeFight; } set { m_RangeFight = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public int RangePerception { get { return m_RangePerception; } set { m_RangePerception = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool SmartCombat{ get { return m_SmartCombat; } set { m_SmartCombat = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool Female { get { return m_Female; } set { m_Female = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool Mounted { get { return m_Mounted; } set { m_Mounted = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public string NPCName { get { return m_Name; } set { m_Name = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public string NPCTitle { get { return m_Title; } set { m_Title = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public HairType Hair { get { return m_HairType; } set { m_HairType = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public BeardType Beard { get { return m_BeardType; } set { m_BeardType = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public FightMode NPCFightMode { get { return m_FightMode; } set { m_FightMode = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public AIType NPCAIType { get { return m_AIType; } set { m_AIType = value; } }
+		
+		[CommandProperty( AccessLevel.GameMaster )]
+		public Container NPCItems { get { return m_Container; } set { m_Container = value; } }
+
+		[CommandProperty( AccessLevel.GameMaster )]
+		public GuardControl GuardControl { get { return m_GuardControl; } set { m_GuardControl = value; } }
+	
+		public override void Spawn( int index )
+		{
+			base.Spawn( index );
+			
+			for ( int i = 0; i < Creatures.Count; i++ )
+			{
+				if ( Creatures[ i ] is CustomNPC )
+				{
+					CustomNPC npc = (CustomNPC)Creatures[ i ];
+										
+					if ( npc.Done )
+						continue;
+					
+					if ( NPCName.ToLower() == "random" )
+						npc.Name = Female ? NameList.RandomName( "female" ) : NameList.RandomName( "male" );
+					else if (NPCName.ToLower() == "drow")
+						npc.Name = Female ? NameList.RandomName( "drowfemale" ) : NameList.RandomName( "drowmale" );
+					else if (NPCName.ToLower() == "dwarf")
+						npc.Name = Female ? NameList.RandomName( "dwarffemale" ) : NameList.RandomName( "dwarfmale" );
+					else if (NPCName.ToLower() == "elf")
+						npc.Name = Female ? NameList.RandomName( "elffemale" ) : NameList.RandomName( "elfmale" );
+					else if (NPCName.ToLower() == "orc")
+						npc.Name = Female ? NameList.RandomName( "orcfemale" ) : NameList.RandomName( "orcmale" );
+					else if (NPCName.ToLower() == "lizardman")
+						npc.Name = NameList.RandomName("lizardman");
+					else if (NPCName.ToLower() == "ratman")
+						npc.Name = NameList.RandomName("ratman");
+					else if (NPCName.ToLower() == "evil mage")
+						npc.Name = NameList.RandomName("evil mage");
+					else if (NPCName.ToLower() == "evil mage lord")
+						npc.Name = NameList.RandomName("evil mage lord");
+					else if (NPCName.ToLower() == "daemon")
+						npc.Name = NameList.RandomName("daemon");
+					else if (NPCName.ToLower() == "golem controller")
+						npc.Name = NameList.RandomName("golem controlloer");
+					else if (NPCName.ToLower() == "savage shaman")
+						npc.Name = NameList.RandomName("savage shaman");
+					else if (NPCName.ToLower() == "savage rider")
+						npc.Name = NameList.RandomName("savage rider");
+					else if (NPCName.ToLower() == "savage")
+						npc.Name = NameList.RandomName("savage");
+					else if (NPCName.ToLower() == "pixie")
+						npc.Name = NameList.RandomName("pixie");
+					else if (NPCName.ToLower() == "ethereal warrior")
+						npc.Name = NameList.RandomName("ethereal warrior");
+					else if (NPCName.ToLower() == "centaur")
+						npc.Name = NameList.RandomName("centaur");
+					else if (NPCName.ToLower() == "shadow knight")
+						npc.Name = NameList.RandomName("shadow knight");
+					else if (NPCName.ToLower() == "demon knight")
+						npc.Name = NameList.RandomName("demon knight");
+					else if (NPCName.ToLower() == "impaler")
+						npc.Name = NameList.RandomName("impaler");
+					else if (NPCName.ToLower() == "darknight creeper")
+						npc.Name = NameList.RandomName("darknight creeper");
+					else if (NPCName.ToLower() == "ancient lich")
+						npc.Name = NameList.RandomName("ancient lich");
+					else
+						npc.Name = NPCName;
+
+					npc.BodyValue = m_Body;
+					npc.Female = m_Female;
+					npc.Title = m_Title;
+					npc.Fame = m_Fame;
+					npc.Karma = m_Karma;
+					npc.Hue = m_Hue;
+					npc.SetStr( m_Str );
+					npc.SetDex( m_Dex );
+					npc.SetInt( m_Int );
+					npc.SetHits( m_Hits );
+					npc.SetStam( m_Stam );
+					npc.SetMana( m_Mana );
+					npc.FightMode = m_FightMode;
+					npc.RangeFight = m_RangeFight;
+					npc.RangePerception = m_RangePerception;
+					npc.SmartCombat = m_SmartCombat;
+					npc.AI = m_AIType;
+					npc.Level = m_Level;
+					npc.GuardController = m_GuardControl;
+
+					if ( m_Karma < 0 )
+						npc.Kills = 20;
+
+					#region Hair & Beard
+					if ( m_HairType == HairType.None )
+						npc.EquipItem( Server.Items.Hair.GetRandomHair( m_Female, m_HairHue ) );
+					else
+					{
+						switch ( m_HairType )
+						{
+							case HairType.Afro:
+								npc.EquipItem( new Afro( m_HairHue ) );
+
+								break;
+
+							case HairType.Bald:
+								break;
+
+							case HairType.KrisnaHair:
+								npc.EquipItem( new KrisnaHair( m_HairHue ) );
+
+								break;
+
+							case HairType.LongHair:
+								npc.EquipItem( new LongHair( m_HairHue ) );
+
+								break;
+
+							case HairType.Mohawk:
+								npc.EquipItem( new Mohawk( m_HairHue ) );
+
+								break;
+
+							case HairType.PageboyHair:
+								npc.EquipItem( new PageboyHair( m_HairHue ) );
+
+								break;
+
+							case HairType.PonyTail:
+								npc.EquipItem( new PonyTail( m_HairHue ) );
+
+								break;
+
+							case HairType.ReceedingHair:
+								npc.EquipItem( new ReceedingHair( m_HairHue ) );
+
+								break;
+
+							case HairType.ShortHair:
+								npc.EquipItem( new ShortHair( m_HairHue ) );
+
+								break;
+
+							case HairType.TwoPigTails:
+								npc.EquipItem( new TwoPigTails( m_HairHue ) );
+
+								break;
+						}
+
+						switch ( m_BeardType )
+						{
+							case BeardType.None:
+								break;
+
+							case BeardType.Goatee:
+								npc.EquipItem( new Goatee( m_HairHue ) );
+
+								break;
+
+							case BeardType.LongBeard:
+								npc.EquipItem( new LongBeard( m_HairHue ) );
+
+								break;
+
+							case BeardType.MediumLongBeard:
+								npc.EquipItem( new MediumLongBeard( m_HairHue ) );
+
+								break;
+
+							case BeardType.MediumShortBeard:
+								npc.EquipItem( new MediumShortBeard( m_HairHue ) );
+
+								break;
+
+							case BeardType.Mustache:
+								npc.EquipItem( new Mustache( m_HairHue ) );
+
+								break;
+
+							case BeardType.ShortBeard:
+								npc.EquipItem( new ShortBeard( m_HairHue ) );
+
+								break;
+
+							case BeardType.Vandyke:
+								npc.EquipItem( new Vandyke( m_HairHue ) );
+
+								break;
+
+						}
+					}
+					#endregion
+
+					if ( Mounted )
+					{
+						Horse mount = new Horse();
+						mount.ItemID = MountID;
+						mount.Hue = MountHue;
+						mount.SetStr( 1 );
+						mount.SetDex( 1 );
+						mount.SetInt( 1 );
+						mount.SetHits( 1 );
+						mount.SetDex( 1 );
+						mount.SetMana( 1 );
+						mount.Level = 0;
+
+						mount.Tamable = false;
+						mount.Rider = npc;
+					}
+
+					Container pack = npc.Backpack;
+
+					if ( pack == null )
+					{
+						pack = new Backpack();
+						pack.Movable = false;
+						npc.AddItem( pack );
+					}
+					
+					if ( NPCItems != null && !NPCItems.Deleted )
+						DoItems( npc );
+					
+					for ( int j = 0; j < npc.Skills.Length - 1; j++ )
+						npc.SetSkill( (SkillName)j, m_Skills[ j ] );
+					
+					npc.Done = true;
+				}
+			}
+		}
+		
+		private void DoItems( CustomNPC npc )
+		{
+			foreach ( Item i in NPCItems.Items )
+			{
+				if ( i is BaseWeapon )
+				{
+					BaseWeapon original = (BaseWeapon)i;
+					BaseWeapon temp = (BaseWeapon)Activator.CreateInstance( i.GetType() );
+					
+					temp.Name = original.Name;
+					temp.Hue = original.Hue;
+					temp.Layer = original.Layer;
+					temp.Visible = original.Visible;
+					temp.Movable = original.Movable;
+					temp.ItemID = original.ItemID;
+					temp.Weight = original.Weight;
+					temp.Amount = original.Amount;
+					temp.LootType = original.LootType;
+					temp.Resource = original.Resource;
+					
+					temp.Attributes = original.Attributes;
+					temp.WeaponAttributes = original.WeaponAttributes;
+					
+					if ( !npc.EquipItem( temp ) )
+						npc.Backpack.AddItem( temp );
+						
+				} else if ( i is BaseArmor ) {
+					BaseArmor original = (BaseArmor)i;
+					BaseArmor temp = (BaseArmor)Activator.CreateInstance( i.GetType() );
+										
+					temp.Name = original.Name;
+					temp.Hue = original.Hue;
+					temp.Layer = original.Layer;
+					temp.Visible = original.Visible;
+					temp.Movable = original.Movable;
+					temp.ItemID = original.ItemID;
+					temp.Weight = original.Weight;
+					temp.Amount = original.Amount;
+					temp.LootType = original.LootType;
+					temp.Resource = original.Resource;
+					temp.PhysicalBonus = original.PhysicalBonus;
+					temp.FireBonus = original.FireBonus;
+					temp.ColdBonus = original.ColdBonus;
+					temp.PoisonBonus = original.PoisonBonus;
+					temp.EnergyBonus = original.EnergyBonus;
+					
+					temp.Attributes = original.Attributes;
+					temp.ArmorAttributes = original.ArmorAttributes;
+					
+					if ( !npc.EquipItem( temp ) )
+						npc.Backpack.AddItem( temp );
+						
+				} else if ( i is BaseClothing ) {
+					BaseClothing original = (BaseClothing)i;
+					BaseClothing temp = (BaseClothing)Activator.CreateInstance( i.GetType() );
+										
+					temp.Name = original.Name;
+					temp.Hue = original.Hue;
+					temp.Layer = original.Layer;
+					temp.Visible = original.Visible;
+					temp.Movable = original.Movable;
+					temp.ItemID = original.ItemID;
+					temp.Weight = original.Weight;
+					temp.Amount = original.Amount;
+					temp.LootType = original.LootType;
+					
+					temp.Attributes = original.Attributes;
+					temp.ClothingAttributes = original.ClothingAttributes;
+					
+					if ( !npc.EquipItem( temp ) )
+						npc.Backpack.AddItem( temp );
+				} else {
+					Item temp = (Item)Activator.CreateInstance( i.GetType() );
+					
+					temp.Name = i.Name;
+					temp.Hue = i.Hue;
+					temp.Layer = i.Layer;
+					temp.Visible = i.Visible;
+					temp.Movable = i.Movable;
+					temp.ItemID = i.ItemID;
+					temp.Weight = i.Weight;
+					temp.Amount = i.Amount;
+					temp.LootType = i.LootType;
+					
+					npc.Backpack.AddItem( temp );
+				}
+			}
+		}
+		
+		public override void GetProperties( ObjectPropertyList list )
+		{
+			base.GetProperties( list );
+			
+			if ( NPCItems != null )
+			{
+				if ( NPCItems.RootParent != null && NPCItems.RootParent is Mobile )
+					list.Add( "Item Bag is on mobile {0}, account {1}", ((Mobile)NPCItems.RootParent).Name, ((Mobile)NPCItems.RootParent).Account );
+				else if ( NPCItems.RootParent != null && NPCItems.RootParent is Item )
+					list.Add( "Item Bag is in {0} at {1} {2}", ((Item)NPCItems.RootParent).Name, ((Item)NPCItems.RootParent).Location, ((Item)NPCItems.RootParent).Map );
+				else
+					list.Add( "Item Bag is at {0} {1}", NPCItems.Location.ToString(), this.Map.ToString() );
+			} else {
+				list.Add( "No linked Item Bag" );
+			}
+		}
+		
+		[Constructable]
+		public CustomNPCSpawner() : base()
+		{
+			Name = "Custom NPC Spawner";
+		}
+		
+		public CustomNPCSpawner( Serial serial ) : base( serial )
+		{
+		}
+		
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+			
+			writer.Write( (int) 4 ); // version
+			writer.Write( m_Str );
+			writer.Write( m_Dex );
+			writer.Write( m_Int );
+			writer.Write( m_Hits );
+			writer.Write( m_Stam );
+			writer.Write( m_Mana );
+			writer.Write( m_Hue );
+			writer.Write( m_HairHue );
+			writer.Write( m_Body );
+			writer.Write( m_Fame );
+			writer.Write( m_Karma );
+			writer.Write( m_Female );
+			writer.Write( m_Name );
+			writer.Write( m_Title );
+			
+			writer.Write( m_Skills.Length );
+			for ( int i = 0; i < m_Skills.Length; i++ )
+				writer.Write( m_Skills[ i ] );
+			
+			writer.Write( (int)m_FightMode );
+			writer.Write( (int)m_AIType );
+			writer.Write( m_Container );
+			writer.Write( m_Level );
+
+			// Version 2
+			writer.Write( m_MountID );
+			writer.Write( m_MountHue );
+			writer.Write( m_Mounted );
+			writer.Write( (int)m_HairType );
+			writer.Write( ( int )m_BeardType );
+
+			// Version 3
+			writer.Write( m_RangeFight );
+			writer.Write( m_RangePerception );
+			writer.Write( m_SmartCombat );
+
+			// Version 4
+			writer.Write( m_GuardControl );
+		}
+		
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+			
+			int version = reader.ReadInt();
+			m_Str = reader.ReadInt();
+			m_Dex = reader.ReadInt();
+			m_Int = reader.ReadInt();
+			m_Hits = reader.ReadInt();
+			m_Stam = reader.ReadInt();
+			m_Mana = reader.ReadInt();
+			m_Hue = reader.ReadInt();
+			m_HairHue = reader.ReadInt();
+			m_Body = reader.ReadInt();
+			m_Fame = reader.ReadInt();
+			m_Karma = reader.ReadInt();
+			m_Female = reader.ReadBool();
+			m_Name = reader.ReadString();
+			m_Title = reader.ReadString();
+			
+			int count = reader.ReadInt();
+			for ( int i = 0; i < count; i++ )
+				m_Skills[ i ] = reader.ReadDouble();
+			
+			m_FightMode = (FightMode)reader.ReadInt();
+			m_AIType = (AIType)reader.ReadInt();
+			m_Container = (Container)reader.ReadItem();
+			m_Level = reader.ReadInt();
+		
+			if ( version >= 2 )
+			{
+					m_MountID = reader.ReadInt();
+					m_MountHue = reader.ReadInt();
+					m_Mounted = reader.ReadBool();
+					m_HairType = ( HairType )reader.ReadInt();
+					m_BeardType = ( BeardType )reader.ReadInt();
+			}
+
+			if ( version >= 3 )
+			{
+				m_RangeFight = reader.ReadInt();
+				m_RangePerception = reader.ReadInt();
+				m_SmartCombat = reader.ReadBool();
+			}
+
+			if ( version >= 4 )
+			{
+				m_GuardControl = (GuardControl)reader.ReadItem();
+			}
+		}
+	}
+	
+	public class CustomNPC : BaseCreature
+	{
+		public bool Done = false;
+		public bool SmartCombat = false;
+		
+		private DateTime m_NextHealTime = DateTime.MinValue;
+		private DateTime m_NextEquipTime = DateTime.MinValue;
+
+		private GuardControl m_Controller = null;
+
+		[CommandProperty( AccessLevel.GameMaster, AccessLevel.GameMaster )]
+		public GuardControl GuardController { get { return m_Controller; } set { m_Controller = value; } }
+
+		private static TimeSpan m_EquipDelay = TimeSpan.FromSeconds( .5 );
+
+		public override bool IsEnemy( Mobile m )
+		{
+			if ( m_Controller == null )
+				return base.IsEnemy( m );
+
+			if ( m.Player )
+			{
+				TeiravonMobile player = ( TeiravonMobile )m;
+
+				if ( m_Controller.EnemyGuilds.Count > 0 )
+				{
+					for ( int i = 0; i < m_Controller.EnemyGuilds.Count; i++ )
+					{
+						Guild g = ( Guild )m_Controller.EnemyGuilds[ 0 ];
+
+						if ( m.Guild == g )
+							return true;
+					}
+				}
+				else if ( m_Controller.EnemyRaces.Count > 0 )
+				{
+					for ( int i = 0; i < m_Controller.EnemyRaces.Count; i++ )
+					{
+						if ( player.PlayerRace == ( Race )m_Controller.EnemyRaces[ i ] )
+							return true;
+					}
+				}
+				else if ( m_Controller.EnemyPlayers.Count > 0 )
+				{
+					for ( int i = 0; i < m_Controller.EnemyPlayers.Count; i++ )
+					{
+						if ( m == ( TeiravonMobile )m_Controller.EnemyPlayers[ i ] )
+							return true;
+					}
+				}
+			}
+
+			if ( Aggressors.Count > 0 )
+			{
+				for ( int i = 0; i < Aggressors.Count; i++ )
+				{
+					if ( m == ( ( AggressorInfo )Aggressors[ i ] ).Attacker )
+						return true;
+				}
+			}
+
+			return false;
+			//return base.IsEnemy( m );
+		}
+
+		public override void OnActionCombat()
+		{
+			base.OnActionCombat();
+
+			if ( Combatant == null || Combatant.Deleted || !SmartCombat )
+				return;
+
+			/* Weapon Switching -
+			 * Range 0 - 3: BaseMeleeWeapon
+			 * Range 4 - 10: Crossbow
+			 * Range 11 - 20: Longbow
+			 */
+
+			int distance = (int)GetDistanceToSqrt( Combatant );
+
+			if ( distance <= 3 && !( Weapon is Longsword ) && !( Weapon is Fists ) )
+			{
+				Item weapon = Backpack.FindItemByType( typeof( Longsword ) );
+				Item shield = Backpack.FindItemByType( typeof( BaseShield ) );
+
+				if ( weapon != null && m_NextEquipTime < DateTime.Now )
+				{
+					AddToBackpack( Weapon as Item );
+					EquipItem( weapon );
+
+					if ( weapon.Layer != Layer.TwoHanded && shield != null )
+						EquipItem( shield );
+
+					RangeFight = 0;
+					m_NextEquipTime = DateTime.Now + m_EquipDelay;
+				}
+			}
+			else if ( distance >= 4 && distance <= 10 && !( Weapon is Crossbow ) && !( Weapon is Fists ) )
+			{
+				Item weapon = Backpack.FindItemByType( typeof( Crossbow ) );
+
+				if ( weapon != null && m_NextEquipTime < DateTime.Now )
+				{
+					AddToBackpack( Weapon as Item );
+
+					if ( ShieldArmor != null )
+						AddToBackpack( ShieldArmor );
+
+					EquipItem( weapon );
+
+					RangeFight = 6;
+					m_NextEquipTime = DateTime.Now + m_EquipDelay;
+				}
+			}
+			else if ( distance >= 11 && !( Weapon is Longbow ) && !( Weapon is Fists ) )
+			{
+				Item weapon = Backpack.FindItemByType( typeof( Longbow ) );
+
+				if ( weapon != null && m_NextEquipTime < DateTime.Now )
+				{
+					AddToBackpack( Weapon as Item );
+					
+					if ( ShieldArmor != null )
+						AddToBackpack( ShieldArmor );
+
+					EquipItem( weapon );
+
+					RangeFight = 15;
+					m_NextEquipTime = DateTime.Now + m_EquipDelay;
+				}
+			}
+
+			// Healing
+			if ( m_NextHealTime < DateTime.Now && Hits <= ( int )( HitsMax / 4 ) && Backpack.FindItemByType( typeof( Bandage ) ) != null )
+			{
+				Hits += Utility.RandomMinMax( ( int )( Skills.Healing.Value * .2 ), ( int )( Skills.Healing.Value * .5 ) );
+				Emote( "*You see {0} heal {1}*", Name, Female ? "herself" : "himself" );
+
+				Backpack.ConsumeTotal( typeof( Bandage ), 1 );
+				m_NextHealTime = DateTime.Now + TimeSpan.FromSeconds( 30.0 );
+			}
+		}
+
+		public override void Kill()
+		{
+			if ( Mounted )
+				( ( BaseMount )Mount ).Delete();
+
+			base.Kill();
+		}
+
+		[Constructable]
+		public CustomNPC() : base( AIType.AI_Predator, FightMode.Closest, 10, 1, 0.2, 0.4 )
+		{
+			Name = "Test";
+			Body = 0x190;
+		}
+		
+		public CustomNPC( Serial serial ) : base( serial )
+		{
+		}
+		
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( 1 ); // Version
+			writer.Write( Done );
+			writer.Write( SmartCombat );
+
+			writer.Write( m_Controller );
+		}
+		
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+			
+			int version = reader.ReadInt();
+
+			Done = reader.ReadBool();
+			SmartCombat = reader.ReadBool();
+			
+			m_Controller = ( GuardControl )reader.ReadItem();
+		}
+	}
+
+	public class GuardControlOrb : Item
+	{
+		#region Menu & Target
+		private class ControlMenu : QuestionMenu
+		{
+			private static string[] answers = new string[] { "Add/Remove An Enemy Guild", "Add/Remove An Enemy Race", "Add/Remove An Enemy Player" };
+
+			private GuardControl m_GuardControl;
+
+			public ControlMenu( GuardControl gc )
+				: base( "What do you want to do?", answers )
+			{
+				m_GuardControl = gc;
+			}
+
+			public override void OnResponse( Server.Network.NetState state, int index )
+			{
+				switch ( index )
+				{
+					case 0:
+						state.Mobile.Target = new EnemyGuildTarget( m_GuardControl );
+						break;
+
+					case 1:
+						state.Mobile.Target = new EnemyRaceTarget( m_GuardControl );
+						break;
+
+					case 2:
+						state.Mobile.Target = new EnemyPlayerTarget( m_GuardControl );
+						break;
+				}
+			}
+		}
+
+		public class EnemyPlayerTarget : Target
+		{
+			GuardControl m_GuardControl;
+
+			public EnemyPlayerTarget( GuardControl gc )
+				: base( -1, false, TargetFlags.None )
+			{
+				CheckLOS = false;
+				m_GuardControl = gc;
+			}
+
+			protected override void OnTarget( Mobile from, object targeted )
+			{
+				TeiravonMobile player = targeted as TeiravonMobile;
+
+				if ( player == null )
+				{
+					from.SendMessage( "You must target a player." );
+					return;
+				}
+				else if ( m_GuardControl.EnemyPlayers.Contains( player ) )
+				{
+					m_GuardControl.EnemyPlayers.Remove( player );
+					from.SendMessage( "{0} removed.", player.Name );
+
+					return;
+				}
+				else
+				{
+					m_GuardControl.EnemyPlayers.Add( player );
+					from.SendMessage( "{0} added.", player.Name );
+				}
+			}
+		}
+
+		public class EnemyRaceTarget : Target
+		{
+			GuardControl m_GuardControl;
+
+			public EnemyRaceTarget( GuardControl gc )
+				: base( -1, false, TargetFlags.None )
+			{
+				CheckLOS = false;
+				m_GuardControl = gc;
+			}
+
+			protected override void OnTarget( Mobile from, object targeted )
+			{
+				TeiravonMobile player = targeted as TeiravonMobile;
+
+				if ( player == null )
+				{
+					from.SendMessage( "You must target a player." );
+					return;
+				}
+				else if ( m_GuardControl.EnemyRaces.Contains( player.PlayerRace ) )
+				{
+					m_GuardControl.EnemyRaces.Remove( player.PlayerRace );
+					from.SendMessage( "{0} removed.", player.PlayerRace );
+
+					return;
+				}
+				else
+				{
+					m_GuardControl.EnemyRaces.Add( player.PlayerRace );
+					from.SendMessage( "{0} added.", player.PlayerRace );
+				}
+			}
+		}
+
+		public class EnemyGuildTarget : Target
+		{
+			GuardControl m_GuardControl;
+
+			public EnemyGuildTarget( GuardControl gc )
+				: base( -1, false, TargetFlags.None )
+			{
+				CheckLOS = false;
+				m_GuardControl = gc;
+			}
+
+			protected override void OnTarget( Mobile from, object targeted )
+			{
+				Mobile player = targeted as Mobile;
+
+				if ( player == null )
+				{
+					from.SendMessage( "You must target a player in a guild." );
+					return;
+				}
+				else if ( player.Guild == null )
+				{
+					from.SendMessage( "You must target a player in a guild." );
+					return;
+				}
+				else if ( m_GuardControl.EnemyGuilds.Contains( player.Guild ) )
+				{
+					m_GuardControl.EnemyGuilds.Remove( player.Guild );
+					from.SendMessage( "{0} removed.", player.Guild.Name );
+
+					return;
+				}
+				else
+				{
+					m_GuardControl.EnemyGuilds.Add( player.Guild );
+					from.SendMessage( "{0} added.", player.Guild.Name );
+				}
+			}
+		}
+		#endregion
+
+		private GuardControl m_GuardControl = null;
+
+		[CommandProperty( AccessLevel.GameMaster, AccessLevel.GameMaster )]
+		public GuardControl GuardControl { get { return m_GuardControl; } set { m_GuardControl = value; } }
+
+		public override void OnDoubleClick( Mobile from )
+		{
+			from.SendMenu( new ControlMenu( m_GuardControl ) );
+		}
+
+		[Constructable]
+		public GuardControlOrb()
+			: base( 6256 )
+		{
+			Name = "Guard Controller";
+			LootType = LootType.Blessed;
+		}
+
+		public GuardControlOrb( Serial serial )
+			: base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( 1 ); // Version
+			writer.Write( m_GuardControl );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+			m_GuardControl = (GuardControl)reader.ReadItem();
+		}
+	}
+
+	public class GuardControl : Item
+	{
+		private ArrayList m_EnemyGuilds = new ArrayList();
+		private ArrayList m_EnemyRaces = new ArrayList();
+		private ArrayList m_EnemyPlayers = new ArrayList();
+
+		public ArrayList EnemyGuilds { get { return m_EnemyGuilds; } set { m_EnemyGuilds = value; } }
+		public ArrayList EnemyRaces { get { return m_EnemyRaces; } set { m_EnemyRaces = value; } }
+		public ArrayList EnemyPlayers { get { return m_EnemyPlayers; } set { m_EnemyPlayers = value; } }
+
+		public override void OnDoubleClick( Mobile from )
+		{
+			if ( from.AccessLevel > AccessLevel.Player )
+			{
+				GuardControlOrb gco = new GuardControlOrb();
+				gco.GuardControl = this;
+
+				from.Backpack.AddItem( gco );
+			}
+		}
+
+		[Constructable]
+		public GuardControl()
+			: base( 4483 )
+		{
+			Name = "Guard Controller";
+			LootType = LootType.Blessed;
+		}
+
+		public GuardControl( Serial serial )
+			: base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( 1 ); // Version
+
+			writer.WriteGuildList( m_EnemyGuilds );
+			writer.WriteMobileList( m_EnemyPlayers );
+
+			writer.Write( m_EnemyRaces.Count );
+
+			for ( int i = 0; i < m_EnemyRaces.Count; i++ )
+				writer.Write( (int)m_EnemyRaces[ i ] );
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+
+			m_EnemyGuilds = reader.ReadGuildList();
+			m_EnemyPlayers = reader.ReadMobileList();
+
+			for ( int i = 0; i < reader.ReadInt(); i++ )
+				m_EnemyRaces.Add( ( Race )reader.ReadInt() );
+		}
+	}
+}
